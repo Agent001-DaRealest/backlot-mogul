@@ -674,21 +674,26 @@ function SignalExplainOverlay({ stock, sig, periodInfo, drawdown, onClose }) {
           </div>
         </div>
 
-        {/* RETURN dismiss button */}
-        <div style={{ textAlign: 'center', paddingTop: 4 }}>
+        {/* DISMISS button — matches RETURN amber styling */}
+        <div style={{ textAlign: 'center', paddingTop: 12, paddingBottom: 4 }}>
           <span
             onClick={onClose}
             style={{
               fontFamily: MONO,
-              fontSize: 10,
-              letterSpacing: 2,
+              fontSize: 11,
+              letterSpacing: 3,
               color: COLORS.amber,
+              backgroundColor: 'transparent',
+              border: '1px solid rgba(255,170,0,0.5)',
+              padding: '6px 24px',
+              borderRadius: 4,
               cursor: 'pointer',
               textTransform: 'uppercase',
+              fontWeight: 500,
               textShadow: '0 0 8px rgba(255,170,0,0.6)',
             }}
           >
-            RETURN
+            DISMISS
           </span>
         </div>
       </div>
@@ -1914,11 +1919,21 @@ function StockRow({ children, isLast, hasGreenSignal, hasYellowSignal, compact, 
   );
 }
 
-function FrontFace({ stocks, today, loading, limitReached, lastSynced, showSyncTime, ivEditMode, onToggleIVEdit, onStockChange, booted }) {
+function FrontFace({ stocks, today, loading, limitReached, lastSynced, showSyncTime, ivEditMode, onToggleIVEdit, onStockChange, booted, onSignalOverlayChange, signalCloseRef }) {
   // Detect mobile screen
   const [isMobile, setIsMobile] = useState(false);
   // Selected stock for explanation overlay
   const [selectedStock, setSelectedStock] = useState(null);
+
+  // Notify parent when signal overlay opens/closes
+  useEffect(() => {
+    if (onSignalOverlayChange) onSignalOverlayChange(!!selectedStock);
+  }, [selectedStock, onSignalOverlayChange]);
+
+  // Expose close function to parent via ref
+  useEffect(() => {
+    if (signalCloseRef) signalCloseRef.current = () => setSelectedStock(null);
+  }, [signalCloseRef]);
 
   useEffect(() => {
     const checkMobile = () => setIsMobile(window.innerWidth < 700);
@@ -3574,11 +3589,11 @@ function TimeMachineBlueprintOverlay({ stocks, historicalDate, onReturn, onEnter
             }
 
             const tmNavBtnStyle = {
-              fontFamily: MONO, fontSize: 8, letterSpacing: 1,
-              color: '#eee', cursor: 'pointer',
-              padding: '5px 6px',
+              fontFamily: MONO, fontSize: 10, letterSpacing: 1,
+              color: COLORS.amber, cursor: 'pointer',
+              padding: '5px 8px',
               display: 'inline-flex', alignItems: 'center', gap: 4,
-              textShadow: '0 0 6px rgba(255,255,255,0.3)',
+              textShadow: '0 0 6px rgba(255,170,0,0.4)',
               transition: 'all 0.2s ease',
             };
 
@@ -3590,12 +3605,12 @@ function TimeMachineBlueprintOverlay({ stocks, historicalDate, onReturn, onEnter
                     <span
                       onClick={onEnterNewDate}
                       style={{
-                        fontFamily: MONO, fontSize: 8, letterSpacing: 1,
-                        color: '#eee', cursor: 'pointer', padding: '5px 14px',
-                        border: '1px solid rgba(255,255,255,0.5)',
+                        fontFamily: MONO, fontSize: 10, letterSpacing: 1,
+                        color: COLORS.amber, cursor: 'pointer', padding: '5px 14px',
+                        border: '1px solid rgba(255,170,0,0.5)',
                         borderRadius: 6,
                         display: 'inline-block',
-                        textShadow: '0 0 6px rgba(255,255,255,0.3)',
+                        textShadow: '0 0 6px rgba(255,170,0,0.4)',
                         transition: 'all 0.2s ease',
                       }}
                     >
@@ -3603,7 +3618,7 @@ function TimeMachineBlueprintOverlay({ stocks, historicalDate, onReturn, onEnter
                     </span>
                     <span style={{
                       fontFamily: MONO, fontSize: 7, letterSpacing: 2,
-                      color: '#eee', opacity: 0.5,
+                      color: COLORS.amber, opacity: 0.5,
                     }}>
                       2016 – 2026
                     </span>
@@ -3621,7 +3636,7 @@ function TimeMachineBlueprintOverlay({ stocks, historicalDate, onReturn, onEnter
                         onClick={() => onNavigate(prev)}
                         style={tmNavBtnStyle}
                       >
-                        {'\u25C2'} BACK
+                        {'\u25C2'} BACK IN TIME
                       </span>
                     )}
                   </div>
@@ -3631,7 +3646,7 @@ function TimeMachineBlueprintOverlay({ stocks, historicalDate, onReturn, onEnter
                         onClick={() => onNavigate(next)}
                         style={tmNavBtnStyle}
                       >
-                        FORWARD {'\u25B8'}
+                        FORWARD IN TIME {'\u25B8'}
                       </span>
                     )}
                   </div>
@@ -3673,6 +3688,9 @@ export default function Terminal({ stocks = [], today, onRefresh, loading, limit
   const [navSlideButton, setNavSlideButton] = useState(null); // Which nav button is sliding to center ('contact'|'guide'|'timemachine')
   const [navFlicker, setNavFlicker] = useState(false); // Electrical flicker on contact click
   const [restartVisible, setRestartVisible] = useState(false); // Delayed reveal of RESTART during contact gag
+  const [returnScreenFade, setReturnScreenFade] = useState(false); // Gentle screen fade when RETURN dismisses overlay
+  const [signalOverlayOpen, setSignalOverlayOpen] = useState(false); // Signal analysis card is showing
+  const signalCloseRef = React.useRef(null); // Ref to close signal overlay from toolbar
 
   // Clear returnSliding once the overlay conditions have resolved
   const overlayActive = !!(timeMachineDate || timeMachineAnimating || timeMachineInput || (glitching && (!guideBlurred || contactGag)));
@@ -4153,6 +4171,10 @@ export default function Terminal({ stocks = [], today, onRefresh, loading, limit
           0% { top: 0%; opacity: 1; }
           100% { top: 100%; opacity: 0.3; }
         }
+        @keyframes sp1000returnScreenFade {
+          0% { opacity: 0.85; }
+          100% { opacity: 0; }
+        }
         @keyframes sp1000screenRelight {
           0% { opacity: 0; }
           15% { opacity: 0.92; }
@@ -4306,7 +4328,7 @@ export default function Terminal({ stocks = [], today, onRefresh, loading, limit
               }}
             >
               <div style={{ opacity: bootFade ? 1 : 0, transition: 'opacity 1.4s ease-in' }}>
-                <FrontFace stocks={stocks} today={today} loading={loading} limitReached={limitReached} lastSynced={lastSynced} showSyncTime={showSyncTime} ivEditMode={ivEditMode} onToggleIVEdit={() => setIvEditMode(!ivEditMode)} onStockChange={onStockChange} booted={booted} />
+                <FrontFace stocks={stocks} today={today} loading={loading} limitReached={limitReached} lastSynced={lastSynced} showSyncTime={showSyncTime} ivEditMode={ivEditMode} onToggleIVEdit={() => setIvEditMode(!ivEditMode)} onStockChange={onStockChange} booted={booted} onSignalOverlayChange={setSignalOverlayOpen} signalCloseRef={signalCloseRef} />
               </div>
               {/* Screen relight overlay — dims then relights when SP-1000 tapped on home screen */}
               {screenRelight && (
@@ -4317,6 +4339,18 @@ export default function Terminal({ stocks = [], today, onRefresh, loading, limit
                     backgroundColor: COLORS.screen,
                     zIndex: 55, borderRadius: 6, pointerEvents: 'none',
                     animation: 'sp1000screenRelight 1.2s ease-out forwards',
+                  }}
+                />
+              )}
+              {/* Gentle fade overlay when RETURN dismisses an overlay — softens the pop */}
+              {returnScreenFade && (
+                <div
+                  onAnimationEnd={() => setReturnScreenFade(false)}
+                  style={{
+                    position: 'absolute', top: 0, left: 0, right: 0, bottom: 0,
+                    backgroundColor: COLORS.screen,
+                    zIndex: 55, borderRadius: 6, pointerEvents: 'none',
+                    animation: 'sp1000returnScreenFade 0.8s ease-out forwards',
                   }}
                 />
               )}
@@ -4417,6 +4451,7 @@ export default function Terminal({ stocks = [], today, onRefresh, loading, limit
                     }
                   };
                   setReturnSliding(true);
+                  setReturnScreenFade(true);
                   setTimeout(() => setReturnSlidePop(true), 550);
                   setTimeout(() => {
                     doReturn();
@@ -4475,22 +4510,27 @@ export default function Terminal({ stocks = [], today, onRefresh, loading, limit
               padding: '14px 20px 0',
               minHeight: 20,
               position: 'relative',
+              opacity: signalOverlayOpen ? 0.25 : 1,
+              transition: 'opacity 0.3s ease',
             }}>
               {/* Key wrapper — changing navSweepKey remounts buttons, restarting sweep animation */}
               <React.Fragment key={`nav-sweep-${navSweepKey}`}>
               {[
-                { id: 'contact', label: 'CONTACT', morphLabel: 'CONTACT', noSlide: true, trigger: triggerContact, delay: '0.15s' },
-                { id: 'guide', label: 'GUIDE', morphLabel: 'RETURN', trigger: triggerGlitch, delay: '0.3s' },
-                { id: 'timemachine', label: 'TIME MACHINE', morphLabel: 'RETURN', trigger: triggerTimeMachine, delay: '0.45s' },
+                { id: 'contact', label: 'CONTACT', noSlide: true, trigger: triggerContact, delay: '0.15s' },
+                { id: 'guide', label: 'GUIDE', trigger: triggerGlitch, delay: '0.3s' },
+                { id: 'timemachine', label: 'TIME MACHINE', trigger: triggerTimeMachine, delay: '0.45s' },
               ].map((btn, i) => {
-                const isSliding = navSlideButton === btn.id;
-                const isOtherSliding = navSlideButton && navSlideButton !== btn.id;
                 return (
                   <React.Fragment key={btn.id}>
                     {i > 0 && <span style={{ width: 16, opacity: navSlideButton ? 0 : 1, transition: 'opacity 0.2s ease' }} />}
                     <span
                       onClick={() => {
                         if (navSlideButton || navFlicker) return;
+                        // If signal analysis is open, dismiss it instead of triggering nav action
+                        if (signalOverlayOpen && signalCloseRef.current) {
+                          signalCloseRef.current();
+                          return;
+                        }
                         if (glitching || showLogo || timeMachineAnimating) return;
                         if (btn.noSlide) {
                           // Contact: flicker all buttons like electrical disruption, then trigger
@@ -4502,38 +4542,33 @@ export default function Terminal({ stocks = [], today, onRefresh, loading, limit
                           }, 550);
                           return;
                         }
+                        // Guide/TM: fade all buttons out, then trigger (overlay toolbar takes over with RETURN)
                         setNavSlideButton(btn.id);
                         setTimeout(() => {
                           btn.trigger();
                           setNavSlideButton(null);
-                        }, 500);
+                        }, 300);
                       }}
                       style={{
                         fontFamily: MONO,
                         fontSize: 9,
                         letterSpacing: 2,
-                        color: (isSliding && !btn.noSlide) ? COLORS.amber : '#eee',
-                        textShadow: (isSliding && !btn.noSlide)
-                          ? '0 0 8px rgba(255,170,0,0.6)'
-                          : '0 0 10px rgba(255,255,255,0.52), 0 0 20px rgba(255,255,255,0.22), 0 0 40px rgba(255,255,255,0.08)',
+                        color: '#eee',
+                        textShadow: '0 0 10px rgba(255,255,255,0.52), 0 0 20px rgba(255,255,255,0.22), 0 0 40px rgba(255,255,255,0.08)',
                         cursor: (glitching || showLogo || timeMachineAnimating || navSlideButton) ? 'default' : 'pointer',
                         textTransform: 'uppercase',
-                        opacity: isOtherSliding ? 0 : (isSliding && btn.noSlide) ? 0 : (navSlideButton ? 1 : 0),
+                        opacity: navSlideButton ? 0 : undefined,
                         transition: navSlideButton
-                          ? 'left 0.4s ease-in-out, opacity 0.2s ease, color 0.2s ease, text-shadow 0.2s ease'
+                          ? 'opacity 0.25s ease-out'
                           : 'color 0.3s ease, text-shadow 0.3s ease',
                         animationName: navFlicker ? `sp1000navFlicker${i}` : ((!navSlideButton && booted) ? 'sp1000navFadeIn' : 'none'),
-                        animationDuration: navFlicker ? '0.5s' : '0.5s',
+                        animationDuration: navFlicker ? '0.5s' : '0.6s',
                         animationTimingFunction: navFlicker ? 'steps(1)' : 'ease-in',
                         animationFillMode: 'forwards',
-                        animationDelay: navFlicker ? `${i * 0.04}s` : btn.delay,
-                        ...((isSliding && !btn.noSlide) ? {
-                          position: 'absolute',
-                          left: 'calc(50% - 25px)',
-                        } : {}),
+                        animationDelay: navFlicker ? `${i * 0.04}s` : '0s',
                       }}
                     >
-                      {(isSliding && !btn.noSlide) ? btn.morphLabel : btn.label}
+                      {btn.label}
                     </span>
                   </React.Fragment>
                 );
@@ -4541,7 +4576,7 @@ export default function Terminal({ stocks = [], today, onRefresh, loading, limit
               </React.Fragment>
               <span style={{ flex: 1, opacity: navSlideButton ? 0 : 1, transition: 'opacity 0.2s ease' }} />
               <span
-                onClick={navSlideButton ? undefined : triggerLogo}
+                onClick={navSlideButton ? undefined : (signalOverlayOpen && signalCloseRef.current ? signalCloseRef.current : triggerLogo)}
                 style={{
                   fontFamily: MONO,
                   fontSize: 9,
