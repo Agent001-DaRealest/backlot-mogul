@@ -281,9 +281,6 @@ function IVBar({ iv, editMode, onIVChange, stockIdx }) {
       ) : (
         Array.from({ length: 10 }, (_, i) => {
           const active = i < filled || isOverLimit;
-          // Throb red if over 50%
-          const shouldThrob = isOverLimit;
-          const animName = isOverLimit ? 'sp1000danger' : 'sp1000throb';
           return (
             <div
               key={i}
@@ -292,7 +289,6 @@ function IVBar({ iv, editMode, onIVChange, stockIdx }) {
                 height: 12,
                 backgroundColor: active ? segmentColor : COLORS.unlit,
                 borderRadius: 1,
-                animation: shouldThrob && active ? `${animName} 2s ease-in-out infinite` : 'none',
               }}
             />
           );
@@ -3357,6 +3353,7 @@ export default function Terminal({ stocks = [], today, onRefresh, loading, limit
   const [returnSlidePop, setReturnSlidePop] = useState(false);
   const [returnDimming, setReturnDimming] = useState(false);
   const [navRevealing, setNavRevealing] = useState(false);
+  const [navPopping, setNavPopping] = useState(false);
 
   // Clear returnSliding once the overlay conditions have resolved
   const overlayActive = !!(timeMachineDate || timeMachineAnimating || timeMachineInput || (glitching && (!guideBlurred || contactGag)));
@@ -3371,7 +3368,11 @@ export default function Terminal({ stocks = [], today, onRefresh, loading, limit
         setReturnDimming(true);
         setNavRevealing(true);
         setTimeout(() => setReturnDimming(false), 600);
-        setTimeout(() => setNavRevealing(false), 800);
+        setTimeout(() => {
+          setNavRevealing(false);
+          setNavPopping(true);
+          setTimeout(() => setNavPopping(false), 500);
+        }, 800);
       }, 500);
     }
   }, [returnSliding, overlayActive]);
@@ -3626,9 +3627,14 @@ export default function Terminal({ stocks = [], today, onRefresh, loading, limit
           40% { filter: brightness(2); }
           100% { filter: brightness(3); }
         }
+        @keyframes sp1000navPop {
+          0% { opacity: 0; filter: brightness(1); }
+          50% { opacity: 1; filter: brightness(2.5); }
+          100% { opacity: 1; filter: brightness(1); }
+        }
         @keyframes sp1000returnDim {
-          0% { filter: brightness(3); text-shadow: 0 0 12px rgba(255,255,255,0.8), 0 0 24px rgba(255,255,255,0.4); }
-          100% { filter: brightness(1); text-shadow: 0 0 10px rgba(255,255,255,0.35), 0 0 20px rgba(255,255,255,0.15), 0 0 40px rgba(255,255,255,0.05); }
+          0% { filter: brightness(4); text-shadow: 0 0 8px #fff, 0 0 16px rgba(255,255,255,0.95), 0 0 32px rgba(255,255,255,0.7), 0 0 48px rgba(255,255,255,0.4); }
+          100% { filter: brightness(1.2); text-shadow: 0 0 6px rgba(255,255,255,0.9), 0 0 14px rgba(255,255,255,0.6), 0 0 28px rgba(255,255,255,0.3), 0 0 48px rgba(255,255,255,0.1); }
         }
         @keyframes sp1000logoFadeFromBlack {
           0% { opacity: 1; }
@@ -4074,13 +4080,14 @@ export default function Terminal({ stocks = [], today, onRefresh, loading, limit
                 onClick={triggerContact}
                 style={{
                   fontFamily: MONO,
-                  fontSize: 8,
+                  fontSize: 9,
                   letterSpacing: 2,
-                  color: '#555',
+                  color: '#eee',
+                  textShadow: '0 0 10px rgba(255,255,255,0.52), 0 0 20px rgba(255,255,255,0.22), 0 0 40px rgba(255,255,255,0.08)',
                   cursor: (glitching || showLogo || timeMachineAnimating) ? 'default' : 'pointer',
                   textTransform: 'uppercase',
-                  opacity: (booted && !navRevealing) ? 1 : 0,
-                  transition: 'color 0.2s ease, opacity 0.6s ease-in',
+                  opacity: booted ? 1 : 0,
+                  transition: 'color 0.3s ease, text-shadow 0.3s ease, opacity 0.6s ease-in',
                 }}
               >
                 CONTACT
@@ -4090,13 +4097,14 @@ export default function Terminal({ stocks = [], today, onRefresh, loading, limit
                 onClick={triggerGlitch}
                 style={{
                   fontFamily: MONO,
-                  fontSize: 8,
+                  fontSize: 9,
                   letterSpacing: 2,
-                  color: '#555',
+                  color: '#eee',
+                  textShadow: '0 0 10px rgba(255,255,255,0.52), 0 0 20px rgba(255,255,255,0.22), 0 0 40px rgba(255,255,255,0.08)',
                   cursor: 'pointer',
                   textTransform: 'uppercase',
-                  opacity: (booted && !navRevealing) ? 1 : 0,
-                  transition: 'color 0.2s ease, opacity 0.6s ease-in',
+                  opacity: booted ? 1 : 0,
+                  transition: 'color 0.3s ease, text-shadow 0.3s ease, opacity 0.6s ease-in',
                 }}
               >
                 GUIDE
@@ -4106,13 +4114,14 @@ export default function Terminal({ stocks = [], today, onRefresh, loading, limit
                 onClick={triggerTimeMachine}
                 style={{
                   fontFamily: MONO,
-                  fontSize: 8,
+                  fontSize: 9,
                   letterSpacing: 2,
-                  color: '#555',
+                  color: '#eee',
+                  textShadow: '0 0 10px rgba(255,255,255,0.52), 0 0 20px rgba(255,255,255,0.22), 0 0 40px rgba(255,255,255,0.08)',
                   cursor: (glitching || showLogo || timeMachineAnimating) ? 'default' : 'pointer',
                   textTransform: 'uppercase',
-                  opacity: (booted && !navRevealing) ? 1 : 0,
-                  transition: 'color 0.2s ease, opacity 0.6s ease-in',
+                  opacity: booted ? 1 : 0,
+                  transition: 'color 0.3s ease, text-shadow 0.3s ease, opacity 0.6s ease-in',
                 }}
               >
                 TIME MACHINE
@@ -4124,13 +4133,14 @@ export default function Terminal({ stocks = [], today, onRefresh, loading, limit
                   fontFamily: MONO,
                   fontSize: 9,
                   letterSpacing: 4,
-                  color: (showLogo || guideBlurred) ? '#fff' : '#ccc',
+                  color: '#fff',
                   textTransform: 'uppercase',
                   textShadow: (showLogo || guideBlurred)
-                    ? '0 0 12px rgba(255,255,255,0.8), 0 0 24px rgba(255,255,255,0.4)'
-                    : '0 0 10px rgba(255,255,255,0.35), 0 0 20px rgba(255,255,255,0.15), 0 0 40px rgba(255,255,255,0.05)',
+                    ? '0 0 8px #fff, 0 0 16px rgba(255,255,255,0.95), 0 0 32px rgba(255,255,255,0.7), 0 0 48px rgba(255,255,255,0.4)'
+                    : '0 0 6px rgba(255,255,255,0.9), 0 0 14px rgba(255,255,255,0.6), 0 0 28px rgba(255,255,255,0.3), 0 0 48px rgba(255,255,255,0.1)',
+                  filter: (showLogo || guideBlurred) ? 'brightness(1.5)' : 'brightness(1.2)',
                   cursor: (glitching && (!guideBlurred || contactGag)) ? 'default' : 'pointer',
-                  transition: 'color 0.3s ease, text-shadow 0.3s ease',
+                  transition: 'color 0.3s ease, text-shadow 0.3s ease, filter 0.3s ease',
                   animation: returnDimming ? 'sp1000returnDim 0.6s ease-out forwards' : 'none',
                 }}
               >
