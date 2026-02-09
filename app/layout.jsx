@@ -1,5 +1,19 @@
 export const metadata = {
+  metadataBase: new URL('https://vibecode-blush.vercel.app'),
   title: 'SP-1000',
+  description: 'LEAPS Terminal — Track corporate buyback windows, IV, and signal scoring for quality mega-caps.',
+  openGraph: {
+    title: 'SP-1000 LEAPS Terminal',
+    description: 'Track corporate buyback windows, IV, and signal scoring for quality mega-caps.',
+    images: [{ url: '/south-end-ai-logo-social.jpeg', width: 1632, height: 2624 }],
+    type: 'website',
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'SP-1000 LEAPS Terminal',
+    description: 'Track corporate buyback windows, IV, and signal scoring for quality mega-caps.',
+    images: ['/south-end-ai-logo-social.jpeg'],
+  },
 };
 
 export default function RootLayout({ children }) {

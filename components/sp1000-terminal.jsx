@@ -600,14 +600,50 @@ function SignalExplainOverlay({ stock, sig, periodInfo, drawdown, onClose }) {
           fontFamily: MONO,
           fontSize: 13,
           padding: 16,
-          border: `1px solid ${COLORS.dimmer}`,
+          border: `1px solid ${sig.isCrisis ? 'rgba(255,170,0,0.4)' : COLORS.dimmer}`,
           borderRadius: 4,
           marginBottom: 20,
+          position: 'relative',
+          overflow: 'hidden',
         }}>
-          <div style={{ color: COLORS.dim, marginBottom: 8, fontSize: 11, letterSpacing: 1 }}>
-            SCORE CALCULATION:
+          {/* Crisis throb sweep overlay */}
+          {sig.isCrisis && (
+            <div style={{
+              position: 'absolute', top: 0, bottom: 0, left: 0, right: 0,
+              background: 'linear-gradient(90deg, rgba(255,204,0,0.12) 0%, rgba(255,180,0,0.20) 30%, rgba(255,204,0,0.12) 70%, transparent 100%)',
+              animation: 'sp1000crisisThrob 3s ease-in-out infinite',
+              pointerEvents: 'none',
+            }} />
+          )}
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8, position: 'relative', zIndex: 1 }}>
+            <div style={{ color: COLORS.dim, fontSize: 11, letterSpacing: 1 }}>SCORE CALCULATION:</div>
+            {sig.isCrisis && (
+              <div style={{
+                display: 'inline-flex', alignItems: 'center', gap: 5,
+                padding: '2px 8px',
+                border: '1px solid rgba(255,170,0,0.6)',
+                borderRadius: 3,
+                backgroundColor: 'rgba(255,140,0,0.08)',
+              }}>
+                <span style={{
+                  width: 5, height: 5, borderRadius: '50%',
+                  backgroundColor: COLORS.amber,
+                  boxShadow: '0 0 4px rgba(255,170,0,0.8), 0 0 8px rgba(255,170,0,0.4)',
+                  animation: 'sp1000crisisThrob 3s ease-in-out infinite',
+                  flexShrink: 0,
+                }} />
+                <span style={{
+                  fontFamily: MONO, fontSize: 8, letterSpacing: 2,
+                  color: COLORS.amber, fontWeight: 600,
+                  textShadow: '0 0 6px rgba(255,170,0,0.4)',
+                  whiteSpace: 'nowrap',
+                }}>
+                  CRISIS MODE ACTIVE
+                </span>
+              </div>
+            )}
           </div>
-          <div>
+          <div style={{ position: 'relative', zIndex: 1 }}>
             {[
               { label: 'PRICE', val: sig.priceScore },
               { label: 'HIGH', val: sig.nearHighPenalty },
@@ -626,15 +662,22 @@ function SignalExplainOverlay({ stock, sig, periodInfo, drawdown, onClose }) {
           </div>
         </div>
 
-        {/* Dismiss hint */}
-        <div style={{
-          textAlign: 'center',
-          fontFamily: MONO,
-          fontSize: 11,
-          color: COLORS.dimmer,
-          letterSpacing: 1,
-        }}>
-          Click anywhere outside to close
+        {/* RETURN dismiss button */}
+        <div style={{ textAlign: 'center', paddingTop: 4 }}>
+          <span
+            onClick={onClose}
+            style={{
+              fontFamily: MONO,
+              fontSize: 10,
+              letterSpacing: 2,
+              color: COLORS.amber,
+              cursor: 'pointer',
+              textTransform: 'uppercase',
+              textShadow: '0 0 8px rgba(255,170,0,0.6)',
+            }}
+          >
+            RETURN
+          </span>
         </div>
       </div>
     </div>
@@ -1250,14 +1293,13 @@ function PixelGlitchOverlay({ active, startAtGag, stocks: guideStocks, today: gu
           ].map(([num, title]) => (
             <div key={num} style={{
               fontFamily: MONO, fontSize: F - 2, color: GUIDE_TEXT, lineHeight: 2.0,
-              display: 'flex', paddingLeft: 4,
+              display: 'flex', paddingLeft: 4, whiteSpace: 'nowrap',
             }}>
-              <span style={{ color: COLORS.dim, minWidth: 24 }}>{num}.</span>
-              <span style={{ flex: 1, overflow: 'hidden' }}>
-                <span>{title}</span>
-                <span style={{ color: COLORS.dimmer }}>{' ·'.repeat(30)}</span>
+              <span style={{ color: COLORS.dim, minWidth: 24, flexShrink: 0 }}>{num}.</span>
+              <span style={{ flex: 1, overflow: 'hidden', textOverflow: 'clip' }}>
+                {title}<span style={{ color: COLORS.dimmer }}>{' ·'.repeat(30)}</span>
               </span>
-              <span style={{ color: COLORS.dim, marginLeft: 8 }}>{num}</span>
+              <span style={{ color: COLORS.dim, marginLeft: 8, flexShrink: 0 }}>{num}</span>
             </div>
           ))}
         </div>
@@ -2039,7 +2081,10 @@ function FrontFace({ stocks, today, loading, limitReached, lastSynced, showSyncT
           return (
             <React.Fragment key={stock.sym}>
               <StockRow isLast={idx === sortedArr.length - 1} hasGreenSignal={isGreenSig} hasYellowSignal={isYellowSig} hasCrisis={drawdown.mode === 'CRISIS'} compact={isMobile} isMobile={isMobile} booted={booted}>
-                <div style={{ ...cellBase, width: isMobile ? 20 : 32, flexShrink: 0, padding: 0 }}>
+                <div
+                  onClick={() => setSelectedStock({ stock, sig, periodInfo, drawdown })}
+                  style={{ ...cellBase, width: isMobile ? 20 : 32, flexShrink: 0, padding: 0, cursor: 'pointer' }}
+                >
                   <SignalLight sig={sig} tier={isTier2 ? 2 : 1} />
                 </div>
                 <div
@@ -2157,7 +2202,7 @@ function StartupOverlay({ onComplete, onFadeIn }) {
     { text: 'SOUTH END AI' },
     { text: 'SP-1000 LEAPS TERMINAL v1.0' },
     { text: '' },
-    { text: 'LOADING WATCHLIST............. 11 TICKERS' },
+    { text: 'LOADING WATCHLIST............. 10 TICKERS' },
     { text: 'FETCHING MARKET PRICES....... OK' },
     { text: 'READING 52-WEEK RANGES....... OK' },
     { text: 'POLLING IMPLIED VOLATILITY... OK' },
@@ -3502,7 +3547,7 @@ function TimeMachineBlueprintOverlay({ stocks, historicalDate, onReturn, onEnter
           </div>
         )}
 
-        {/* Footer — nav arrows on top, TRAVEL TO NEW DATE below */}
+        {/* Footer — INPUT NEW DATE + nav buttons */}
         <div style={{ marginTop: 18, marginBottom: 4 }}>
           {(() => {
             let prev = null;
@@ -3524,52 +3569,70 @@ function TimeMachineBlueprintOverlay({ stocks, historicalDate, onReturn, onEnter
               };
             }
 
+            const tmNavBtnStyle = {
+              fontFamily: MONO, fontSize: 8, letterSpacing: 1,
+              color: COLORS.amber, cursor: 'pointer',
+              padding: '5px 10px',
+              border: `1px solid ${COLORS.amber}`,
+              borderRadius: 6,
+              display: 'inline-flex', flexDirection: 'column', alignItems: 'center', gap: 3,
+              textShadow: '0 0 6px rgba(255,170,0,0.4)',
+              transition: 'all 0.2s ease',
+              textDecoration: 'none',
+            };
+
             return (
-              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 18 }}>
-                {/* Travel button above nav */}
+              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 14 }}>
+                {/* Input new date button */}
                 {onEnterNewDate && (
-                  <span
-                    onClick={onEnterNewDate}
-                    style={{
-                      fontFamily: MONO, fontSize: 7, letterSpacing: 1,
-                      color: COLORS.dim, cursor: 'pointer', padding: '5px 14px',
-                      border: `1px solid ${COLORS.dim}`,
-                      borderRadius: 8,
-                      display: 'inline-block',
-                      transition: 'all 0.2s ease',
-                    }}
-                  >
-                    TRAVEL TO NEW DATE
-                  </span>
+                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4 }}>
+                    <span
+                      onClick={onEnterNewDate}
+                      style={{
+                        fontFamily: MONO, fontSize: 8, letterSpacing: 1,
+                        color: COLORS.amber, cursor: 'pointer', padding: '5px 14px',
+                        border: `1px solid ${COLORS.amber}`,
+                        borderRadius: 6,
+                        display: 'inline-block',
+                        textShadow: '0 0 6px rgba(255,170,0,0.4)',
+                        transition: 'all 0.2s ease',
+                      }}
+                    >
+                      INPUT NEW DATE
+                    </span>
+                    <span style={{
+                      fontFamily: MONO, fontSize: 7, letterSpacing: 2,
+                      color: COLORS.amber, opacity: 0.6,
+                    }}>
+                      2016 – 2026
+                    </span>
+                  </div>
                 )}
-                {/* Nav arrows row */}
+                {/* Time travel navigation row */}
                 <div style={{
-                  display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-                  width: '100%', padding: '0 12px', boxSizing: 'border-box',
+                  display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start',
+                  width: '100%', padding: '0 8px', boxSizing: 'border-box',
+                  gap: 12,
                 }}>
-                  <div style={{ flex: '1 1 0', textAlign: 'left' }}>
+                  <div style={{ flex: '1 1 0', display: 'flex', justifyContent: 'flex-start' }}>
                     {prev && (
                       <span
                         onClick={() => onNavigate(prev)}
-                        style={{
-                          fontFamily: MONO, fontSize: 7, letterSpacing: 1,
-                          color: COLORS.dim, cursor: 'pointer',
-                        }}
+                        style={tmNavBtnStyle}
                       >
-                        {'\u2190'} {fmtDisplay(prev)}
+                        <span>{'\u25C0'} TIME TRAVEL BACK</span>
+                        <span style={{ fontSize: 7, color: COLORS.dim, textShadow: 'none', letterSpacing: 0 }}>{fmtDisplay(prev)}</span>
                       </span>
                     )}
                   </div>
-                  <div style={{ flex: '1 1 0', textAlign: 'right' }}>
+                  <div style={{ flex: '1 1 0', display: 'flex', justifyContent: 'flex-end' }}>
                     {next && (
                       <span
                         onClick={() => onNavigate(next)}
-                        style={{
-                          fontFamily: MONO, fontSize: 7, letterSpacing: 1,
-                          color: COLORS.dim, cursor: 'pointer',
-                        }}
+                        style={tmNavBtnStyle}
                       >
-                        {fmtDisplay(next)} {'\u2192'}
+                        <span>TIME TRAVEL FORWARD {'\u25B6'}</span>
+                        <span style={{ fontSize: 7, color: COLORS.dim, textShadow: 'none', letterSpacing: 0 }}>{fmtDisplay(next)}</span>
                       </span>
                     )}
                   </div>
@@ -3608,6 +3671,7 @@ export default function Terminal({ stocks = [], today, onRefresh, loading, limit
   const [navRevealing, setNavRevealing] = useState(false);
   const [navPopping, setNavPopping] = useState(false);
   const [navSweepKey, setNavSweepKey] = useState(0); // Increment to retrigger nav button sweep animation
+  const [navSlideButton, setNavSlideButton] = useState(null); // Which nav button is sliding to center ('contact'|'guide'|'timemachine')
 
   // Clear returnSliding once the overlay conditions have resolved
   const overlayActive = !!(timeMachineDate || timeMachineAnimating || timeMachineInput || (glitching && (!guideBlurred || contactGag)));
@@ -3894,6 +3958,10 @@ export default function Terminal({ stocks = [], today, onRefresh, loading, limit
         @keyframes sp1000navFadeIn {
           0% { opacity: 0; }
           100% { opacity: 1; }
+        }
+        @keyframes sp1000restartThrob {
+          0%, 100% { text-shadow: 0 0 8px rgba(255,255,255,0.6), 0 0 16px rgba(255,255,255,0.3); }
+          50% { text-shadow: 0 0 12px rgba(255,255,255,1), 0 0 24px rgba(255,255,255,0.7), 0 0 36px rgba(255,255,255,0.3); }
         }
         @keyframes sp1000returnDim {
           0% { filter: brightness(4); text-shadow: 0 0 8px #fff, 0 0 16px rgba(255,255,255,0.95), 0 0 32px rgba(255,255,255,0.7), 0 0 48px rgba(255,255,255,0.4); }
@@ -4296,17 +4364,20 @@ export default function Terminal({ stocks = [], today, onRefresh, loading, limit
                   fontFamily: MONO,
                   fontSize: 9,
                   letterSpacing: 2,
-                  color: COLORS.amber,
+                  color: contactGag ? '#fff' : COLORS.amber,
                   cursor: returnSliding ? 'default' : 'pointer',
                   textTransform: 'uppercase',
-                  textShadow: '0 0 8px rgba(255,170,0,0.6)',
+                  textShadow: contactGag
+                    ? '0 0 8px rgba(255,255,255,0.8), 0 0 16px rgba(255,255,255,0.5)'
+                    : '0 0 8px rgba(255,170,0,0.6)',
+                  animation: contactGag && !returnSliding ? 'sp1000restartThrob 1.5s ease-in-out infinite' : 'none',
                   transition: 'left 0.7s ease-in-out, opacity 0.3s ease-in 0.55s',
                   position: 'absolute',
                   left: returnSliding ? 'calc(100% - 70px)' : 'calc(50% - 25px)',
                   opacity: returnSliding ? 0 : 1,
                 }}
               >
-                RETURN
+                {contactGag ? 'RESTART' : 'RETURN'}
               </span>
               {/* SP-1000 reveals at destination as RETURN arrives */}
               <span
@@ -4330,7 +4401,7 @@ export default function Terminal({ stocks = [], today, onRefresh, loading, limit
               </span>
             </div>
           ) : (
-            /* Normal/startup: GUIDE + TIME MACHINE left, SP-1000 right */
+            /* Normal/startup: CONTACT + GUIDE + TIME MACHINE left, SP-1000 right */
             <div style={{
               display: 'flex',
               justifyContent: 'center',
@@ -4338,78 +4409,64 @@ export default function Terminal({ stocks = [], today, onRefresh, loading, limit
               marginTop: 'auto',
               padding: '14px 20px 0',
               minHeight: 20,
+              position: 'relative',
             }}>
               {/* Key wrapper — changing navSweepKey remounts buttons, restarting sweep animation */}
               <React.Fragment key={`nav-sweep-${navSweepKey}`}>
-              <span
-                onClick={triggerContact}
-                style={{
-                  fontFamily: MONO,
-                  fontSize: 9,
-                  letterSpacing: 2,
-                  color: '#eee',
-                  textShadow: '0 0 10px rgba(255,255,255,0.52), 0 0 20px rgba(255,255,255,0.22), 0 0 40px rgba(255,255,255,0.08)',
-                  cursor: (glitching || showLogo || timeMachineAnimating) ? 'default' : 'pointer',
-                  textTransform: 'uppercase',
-                  opacity: 0,
-                  transition: 'color 0.3s ease, text-shadow 0.3s ease',
-                  animationName: booted ? 'sp1000navFadeIn' : 'none',
-                  animationDuration: '0.5s',
-                  animationTimingFunction: 'ease-in',
-                  animationFillMode: 'forwards',
-                  animationDelay: '0.15s',
-                }}
-              >
-                CONTACT
-              </span>
-              <span style={{ width: 16 }} />
-              <span
-                onClick={triggerGlitch}
-                style={{
-                  fontFamily: MONO,
-                  fontSize: 9,
-                  letterSpacing: 2,
-                  color: '#eee',
-                  textShadow: '0 0 10px rgba(255,255,255,0.52), 0 0 20px rgba(255,255,255,0.22), 0 0 40px rgba(255,255,255,0.08)',
-                  cursor: 'pointer',
-                  textTransform: 'uppercase',
-                  opacity: 0,
-                  transition: 'color 0.3s ease, text-shadow 0.3s ease',
-                  animationName: booted ? 'sp1000navFadeIn' : 'none',
-                  animationDuration: '0.5s',
-                  animationTimingFunction: 'ease-in',
-                  animationFillMode: 'forwards',
-                  animationDelay: '0.3s',
-                }}
-              >
-                GUIDE
-              </span>
-              <span style={{ width: 16 }} />
-              <span
-                onClick={triggerTimeMachine}
-                style={{
-                  fontFamily: MONO,
-                  fontSize: 9,
-                  letterSpacing: 2,
-                  color: '#eee',
-                  textShadow: '0 0 10px rgba(255,255,255,0.52), 0 0 20px rgba(255,255,255,0.22), 0 0 40px rgba(255,255,255,0.08)',
-                  cursor: (glitching || showLogo || timeMachineAnimating) ? 'default' : 'pointer',
-                  textTransform: 'uppercase',
-                  opacity: 0,
-                  transition: 'color 0.3s ease, text-shadow 0.3s ease',
-                  animationName: booted ? 'sp1000navFadeIn' : 'none',
-                  animationDuration: '0.5s',
-                  animationTimingFunction: 'ease-in',
-                  animationFillMode: 'forwards',
-                  animationDelay: '0.45s',
-                }}
-              >
-                TIME MACHINE
-              </span>
+              {[
+                { id: 'contact', label: 'CONTACT', morphLabel: 'RESTART', trigger: triggerContact, delay: '0.15s' },
+                { id: 'guide', label: 'GUIDE', morphLabel: 'RETURN', trigger: triggerGlitch, delay: '0.3s' },
+                { id: 'timemachine', label: 'TIME MACHINE', morphLabel: 'RETURN', trigger: triggerTimeMachine, delay: '0.45s' },
+              ].map((btn, i) => {
+                const isSliding = navSlideButton === btn.id;
+                const isOtherSliding = navSlideButton && navSlideButton !== btn.id;
+                return (
+                  <React.Fragment key={btn.id}>
+                    {i > 0 && <span style={{ width: 16, opacity: navSlideButton ? 0 : 1, transition: 'opacity 0.2s ease' }} />}
+                    <span
+                      onClick={() => {
+                        if (navSlideButton) return;
+                        if (glitching || showLogo || timeMachineAnimating) return;
+                        setNavSlideButton(btn.id);
+                        setTimeout(() => {
+                          btn.trigger();
+                          setNavSlideButton(null);
+                        }, 500);
+                      }}
+                      style={{
+                        fontFamily: MONO,
+                        fontSize: 9,
+                        letterSpacing: 2,
+                        color: isSliding ? COLORS.amber : '#eee',
+                        textShadow: isSliding
+                          ? '0 0 8px rgba(255,170,0,0.6)'
+                          : '0 0 10px rgba(255,255,255,0.52), 0 0 20px rgba(255,255,255,0.22), 0 0 40px rgba(255,255,255,0.08)',
+                        cursor: (glitching || showLogo || timeMachineAnimating || navSlideButton) ? 'default' : 'pointer',
+                        textTransform: 'uppercase',
+                        opacity: isOtherSliding ? 0 : (navSlideButton ? 1 : 0),
+                        transition: navSlideButton
+                          ? 'left 0.4s ease-in-out, opacity 0.2s ease, color 0.2s ease, text-shadow 0.2s ease'
+                          : 'color 0.3s ease, text-shadow 0.3s ease',
+                        animationName: (!navSlideButton && booted) ? 'sp1000navFadeIn' : 'none',
+                        animationDuration: '0.5s',
+                        animationTimingFunction: 'ease-in',
+                        animationFillMode: 'forwards',
+                        animationDelay: btn.delay,
+                        ...(isSliding ? {
+                          position: 'absolute',
+                          left: 'calc(50% - 25px)',
+                        } : {}),
+                      }}
+                    >
+                      {isSliding ? btn.morphLabel : btn.label}
+                    </span>
+                  </React.Fragment>
+                );
+              })}
               </React.Fragment>
-              <span style={{ flex: 1 }} />
+              <span style={{ flex: 1, opacity: navSlideButton ? 0 : 1, transition: 'opacity 0.2s ease' }} />
               <span
-                onClick={triggerLogo}
+                onClick={navSlideButton ? undefined : triggerLogo}
                 style={{
                   fontFamily: MONO,
                   fontSize: 9,
@@ -4420,9 +4477,10 @@ export default function Terminal({ stocks = [], today, onRefresh, loading, limit
                     ? '0 0 8px #fff, 0 0 16px rgba(255,255,255,0.95), 0 0 32px rgba(255,255,255,0.7), 0 0 48px rgba(255,255,255,0.4)'
                     : '0 0 6px rgba(255,255,255,0.9), 0 0 14px rgba(255,255,255,0.6), 0 0 28px rgba(255,255,255,0.3), 0 0 48px rgba(255,255,255,0.1)',
                   filter: (showLogo || guideBlurred) ? 'brightness(1.5)' : 'brightness(1.2)',
-                  cursor: (glitching && (!guideBlurred || contactGag)) ? 'default' : 'pointer',
-                  transition: 'color 0.3s ease, text-shadow 0.3s ease, filter 0.3s ease',
+                  cursor: (glitching && (!guideBlurred || contactGag)) ? 'default' : navSlideButton ? 'default' : 'pointer',
+                  transition: 'color 0.3s ease, text-shadow 0.3s ease, filter 0.3s ease, opacity 0.2s ease',
                   animation: returnDimming ? 'sp1000returnDim 0.6s ease-out forwards' : 'none',
+                  opacity: navSlideButton ? 0 : 1,
                 }}
               >
                 SP-1000
