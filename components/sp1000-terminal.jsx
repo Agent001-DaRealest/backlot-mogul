@@ -56,7 +56,7 @@ function formatEventDate(dateStr) {
 
 function SymbolDisplay({ sym }) {
   return (
-    <div style={{ width: 70, flexShrink: 0, color: '#fff' }}>
+    <div style={{ width: 70, flexShrink: 0, color: '#fff', textShadow: '0 0 2px rgba(255,255,255,0.6)' }}>
       <span>{sym}</span>
     </div>
   );
@@ -86,7 +86,7 @@ function PriceGaugeCell({ price, w52h, w52l, gaugeInfo, dividendYield }) {
     >
       {!showUnderlay ? (
         <>
-          <div style={{ color: '#fff', textAlign: 'right', minWidth: 50 }}>
+          <div style={{ color: '#fff', textAlign: 'right', minWidth: 50, textShadow: '0 0 2px rgba(255,255,255,0.6)' }}>
             <span>${Math.round(price)}</span>
           </div>
           <GaugeVertical
@@ -117,6 +117,11 @@ function PriceGaugeCell({ price, w52h, w52l, gaugeInfo, dividendYield }) {
 
 function GaugeVertical({ filled, color, rangePct, isExpensive, price, w52l }) {
   const [clicked, setClicked] = useState(false);
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => {
+    const raf = requestAnimationFrame(() => setMounted(true));
+    return () => cancelAnimationFrame(raf);
+  }, []);
   // 5 bars vertical
   // Below 50%: GREEN, fills from TOP to bottom (cheap = good)
   // Above 50%: RED, fills from BOTTOM to top (expensive = warning)
@@ -179,7 +184,7 @@ function GaugeVertical({ filled, color, rangePct, isExpensive, price, w52l }) {
       ) : (
         Array.from({ length: 5 }, (_, i) => {
           // Both colors fill from bottom (index 4) to top
-          const active = (5 - i) <= filledBars;
+          const active = mounted && (5 - i) <= filledBars;
           return (
             <div
               key={i}
@@ -188,6 +193,7 @@ function GaugeVertical({ filled, color, rangePct, isExpensive, price, w52l }) {
                 width: 8,
                 backgroundColor: active ? barColor : COLORS.unlit,
                 borderRadius: 1,
+                transition: `background-color 0.5s ease-out ${(4 - i) * 0.08}s`,
                 animation: shouldPulse && active ? 'sp1000throb 2s ease-in-out infinite' : 'none',
               }}
             />
@@ -201,6 +207,11 @@ function GaugeVertical({ filled, color, rangePct, isExpensive, price, w52l }) {
 function IVBar({ iv, editMode, onIVChange, stockIdx }) {
   const [clicked, setClicked] = useState(false);
   const [inputValue, setInputValue] = useState(iv?.toString() || '');
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => {
+    const raf = requestAnimationFrame(() => setMounted(true));
+    return () => cancelAnimationFrame(raf);
+  }, []);
 
   // Update input when iv prop changes
   useEffect(() => {
@@ -280,7 +291,7 @@ function IVBar({ iv, editMode, onIVChange, stockIdx }) {
         </div>
       ) : (
         Array.from({ length: 10 }, (_, i) => {
-          const active = i < filled || isOverLimit;
+          const active = mounted && (i < filled || isOverLimit);
           return (
             <div
               key={i}
@@ -289,6 +300,7 @@ function IVBar({ iv, editMode, onIVChange, stockIdx }) {
                 height: 12,
                 backgroundColor: active ? segmentColor : COLORS.unlit,
                 borderRadius: 1,
+                transition: `background-color 0.5s ease-out ${i * 0.06}s`,
               }}
             />
           );
@@ -1269,7 +1281,7 @@ function PixelGlitchOverlay({ active, startAtGag, stocks: guideStocks, today: gu
                 CRISIS MODE
               </div>
               <div style={{ fontFamily: MONO, fontSize: F - 2, color: GUIDE_TEXT, marginTop: 2, lineHeight: 1.4 }}>
-                {'>'}8% drop in 7 trading days. Row pulses amber.
+                {'>'}8% drop in 7 trading days. See signal analysis for details.
               </div>
             </div>
           </div>
@@ -1852,7 +1864,7 @@ function CRTOverlay() {
   );
 }
 
-function StockRow({ children, isLast, hasGreenSignal, hasYellowSignal, hasCrisis, compact, isMobile, booted }) {
+function StockRow({ children, isLast, hasGreenSignal, hasYellowSignal, compact, isMobile, booted }) {
   const h = compact ? 42 : 48;
   return (
     <div
@@ -1883,29 +1895,17 @@ function StockRow({ children, isLast, hasGreenSignal, hasYellowSignal, hasCrisis
           pointerEvents: 'none',
         }} />
       )}
-      {/* Yellow signal highlight — subtler radial glow sweeping left-to-right from signal column */}
+      {/* Yellow signal highlight — phosphor glow sweeping left-to-right, matching green intensity */}
       {hasYellowSignal && !hasGreenSignal && booted && (
         <div style={{
           position: 'absolute',
           top: 0,
           bottom: 0,
-          left: '-90%',
-          width: '100%',
-          background: 'radial-gradient(ellipse 100% 100% at center, rgba(255,204,0,0.16) 0%, rgba(255,204,0,0.05) 40%, transparent 70%)',
-          animation: 'sp1000yellowSweep 4s ease-in-out infinite',
-          pointerEvents: 'none',
-        }} />
-      )}
-      {/* Crisis mode — bright throbbing amber/yellow pulse for rapid drawdown */}
-      {hasCrisis && booted && (
-        <div style={{
-          position: 'absolute',
-          top: 0,
-          bottom: 0,
-          left: 0,
-          right: 0,
-          background: 'linear-gradient(90deg, rgba(255,204,0,0.12) 0%, rgba(255,180,0,0.20) 30%, rgba(255,204,0,0.12) 70%, transparent 100%)',
-          animation: 'sp1000crisisThrob 3s ease-in-out infinite',
+          left: '-60%',
+          width: '60%',
+          background: 'radial-gradient(ellipse 80% 100% at center, rgba(255,204,0,0.50) 0%, rgba(255,204,0,0.18) 30%, transparent 55%)',
+          animation: 'sp1000yellowSweep 3s ease-in-out infinite',
+          filter: 'brightness(1.8)',
           pointerEvents: 'none',
         }} />
       )}
@@ -2080,7 +2080,7 @@ function FrontFace({ stocks, today, loading, limitReached, lastSynced, showSyncT
           const origIdx = stocks.indexOf(stock);
           return (
             <React.Fragment key={stock.sym}>
-              <StockRow isLast={idx === sortedArr.length - 1} hasGreenSignal={isGreenSig} hasYellowSignal={isYellowSig} hasCrisis={drawdown.mode === 'CRISIS'} compact={isMobile} isMobile={isMobile} booted={booted}>
+              <StockRow isLast={idx === sortedArr.length - 1} hasGreenSignal={isGreenSig} hasYellowSignal={isYellowSig} compact={isMobile} isMobile={isMobile} booted={booted}>
                 <div
                   onClick={() => setSelectedStock({ stock, sig, periodInfo, drawdown })}
                   style={{ ...cellBase, width: isMobile ? 20 : 32, flexShrink: 0, padding: 0, cursor: 'pointer' }}
@@ -3406,7 +3406,11 @@ function TimeMachineBlueprintOverlay({ stocks, historicalDate, onReturn, onEnter
         )}
 
         {!loading && greenSignals.length === 0 && yellowSignals.length === 0 && (
-          <div style={{ textAlign: 'center', padding: '30px 20px 10px' }}>
+          <div style={{
+            textAlign: 'center', padding: '24px 20px 18px', margin: '12px 16px',
+            border: '1px solid rgba(255,255,255,0.25)',
+            borderRadius: 8,
+          }}>
             <div style={{ fontFamily: MONO, fontSize: 10, color: '#ffffff', letterSpacing: 3, marginBottom: 14, textShadow: '0 0 8px rgba(255,255,255,0.3)' }}>
               NO SIGNAL DETECTED
             </div>
@@ -3571,38 +3575,35 @@ function TimeMachineBlueprintOverlay({ stocks, historicalDate, onReturn, onEnter
 
             const tmNavBtnStyle = {
               fontFamily: MONO, fontSize: 8, letterSpacing: 1,
-              color: COLORS.amber, cursor: 'pointer',
-              padding: '5px 10px',
-              border: `1px solid ${COLORS.amber}`,
-              borderRadius: 6,
-              display: 'inline-flex', flexDirection: 'column', alignItems: 'center', gap: 3,
-              textShadow: '0 0 6px rgba(255,170,0,0.4)',
+              color: '#eee', cursor: 'pointer',
+              padding: '5px 6px',
+              display: 'inline-flex', alignItems: 'center', gap: 4,
+              textShadow: '0 0 6px rgba(255,255,255,0.3)',
               transition: 'all 0.2s ease',
-              textDecoration: 'none',
             };
 
             return (
               <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 14 }}>
-                {/* Input new date button */}
+                {/* Travel to new date button */}
                 {onEnterNewDate && (
                   <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4 }}>
                     <span
                       onClick={onEnterNewDate}
                       style={{
                         fontFamily: MONO, fontSize: 8, letterSpacing: 1,
-                        color: COLORS.amber, cursor: 'pointer', padding: '5px 14px',
-                        border: `1px solid ${COLORS.amber}`,
+                        color: '#eee', cursor: 'pointer', padding: '5px 14px',
+                        border: '1px solid rgba(255,255,255,0.5)',
                         borderRadius: 6,
                         display: 'inline-block',
-                        textShadow: '0 0 6px rgba(255,170,0,0.4)',
+                        textShadow: '0 0 6px rgba(255,255,255,0.3)',
                         transition: 'all 0.2s ease',
                       }}
                     >
-                      INPUT NEW DATE
+                      TRAVEL TO NEW DATE
                     </span>
                     <span style={{
                       fontFamily: MONO, fontSize: 7, letterSpacing: 2,
-                      color: COLORS.amber, opacity: 0.6,
+                      color: '#eee', opacity: 0.5,
                     }}>
                       2016 – 2026
                     </span>
@@ -3610,8 +3611,8 @@ function TimeMachineBlueprintOverlay({ stocks, historicalDate, onReturn, onEnter
                 )}
                 {/* Time travel navigation row */}
                 <div style={{
-                  display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start',
-                  width: '100%', padding: '0 8px', boxSizing: 'border-box',
+                  display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                  width: '100%', padding: '0 12px', boxSizing: 'border-box',
                   gap: 12,
                 }}>
                   <div style={{ flex: '1 1 0', display: 'flex', justifyContent: 'flex-start' }}>
@@ -3620,8 +3621,7 @@ function TimeMachineBlueprintOverlay({ stocks, historicalDate, onReturn, onEnter
                         onClick={() => onNavigate(prev)}
                         style={tmNavBtnStyle}
                       >
-                        <span>{'\u25C0'} TIME TRAVEL BACK</span>
-                        <span style={{ fontSize: 7, color: COLORS.dim, textShadow: 'none', letterSpacing: 0 }}>{fmtDisplay(prev)}</span>
+                        {'\u25C2'} BACK
                       </span>
                     )}
                   </div>
@@ -3631,8 +3631,7 @@ function TimeMachineBlueprintOverlay({ stocks, historicalDate, onReturn, onEnter
                         onClick={() => onNavigate(next)}
                         style={tmNavBtnStyle}
                       >
-                        <span>TIME TRAVEL FORWARD {'\u25B6'}</span>
-                        <span style={{ fontSize: 7, color: COLORS.dim, textShadow: 'none', letterSpacing: 0 }}>{fmtDisplay(next)}</span>
+                        FORWARD {'\u25B8'}
                       </span>
                     )}
                   </div>
@@ -3672,6 +3671,8 @@ export default function Terminal({ stocks = [], today, onRefresh, loading, limit
   const [navPopping, setNavPopping] = useState(false);
   const [navSweepKey, setNavSweepKey] = useState(0); // Increment to retrigger nav button sweep animation
   const [navSlideButton, setNavSlideButton] = useState(null); // Which nav button is sliding to center ('contact'|'guide'|'timemachine')
+  const [navFlicker, setNavFlicker] = useState(false); // Electrical flicker on contact click
+  const [restartVisible, setRestartVisible] = useState(false); // Delayed reveal of RESTART during contact gag
 
   // Clear returnSliding once the overlay conditions have resolved
   const overlayActive = !!(timeMachineDate || timeMachineAnimating || timeMachineInput || (glitching && (!guideBlurred || contactGag)));
@@ -3833,7 +3834,9 @@ export default function Terminal({ stocks = [], today, onRefresh, loading, limit
     if (timeMachineInput) setTimeMachineInput(false);
     if (!booted) { setBooted(true); requestAnimationFrame(() => setBootFade(true)); }
     setContactGag(true);
+    setRestartVisible(false);
     setGlitching(true);
+    setTimeout(() => setRestartVisible(true), 3500);
   };
 
   const triggerLogo = () => {
@@ -3846,7 +3849,7 @@ export default function Terminal({ stocks = [], today, onRefresh, loading, limit
     }
     // Dismiss any active overlay and return to terminal
     if (showLogo) { setShowLogo(false); return; }
-    if (glitching) { setGlitching(false); setGuideBlurred(false); setContactGag(false); return; }
+    if (glitching) { setGlitching(false); setGuideBlurred(false); setContactGag(false); setRestartVisible(false); return; }
     if (timeMachineInput) { setTimeMachineInput(false); return; }
     if (timeMachineDate && !wormholeActive) { triggerReturnToPresent(); return; }
     // Already on main terminal — dim and relight the screen
@@ -3912,9 +3915,10 @@ export default function Terminal({ stocks = [], today, onRefresh, loading, limit
         }
         @keyframes sp1000yellowSweep {
           0% { transform: translateX(0%); opacity: 0; }
-          8% { opacity: 1; }
-          85% { opacity: 1; }
-          100% { transform: translateX(240%); opacity: 0; }
+          6% { opacity: 1; filter: brightness(2.2); }
+          50% { filter: brightness(1.5); }
+          80% { opacity: 1; filter: brightness(1.2); }
+          100% { transform: translateX(320%); opacity: 0; filter: brightness(1); }
         }
         @keyframes sp1000crisisThrob {
           0%, 100% { opacity: 0.2; filter: brightness(1); }
@@ -3958,6 +3962,63 @@ export default function Terminal({ stocks = [], today, onRefresh, loading, limit
         @keyframes sp1000navFadeIn {
           0% { opacity: 0; }
           100% { opacity: 1; }
+        }
+        @keyframes sp1000navFlicker0 {
+          0% { opacity: 1; }
+          6% { opacity: 0; }
+          12% { opacity: 0.8; }
+          18% { opacity: 0; }
+          28% { opacity: 1; }
+          34% { opacity: 0; }
+          42% { opacity: 0.6; }
+          48% { opacity: 0; }
+          58% { opacity: 0.4; }
+          64% { opacity: 0; }
+          74% { opacity: 0.2; }
+          80% { opacity: 0; }
+          100% { opacity: 0; }
+        }
+        @keyframes sp1000navFlicker1 {
+          0% { opacity: 1; }
+          10% { opacity: 0.9; }
+          16% { opacity: 0; }
+          24% { opacity: 0.7; }
+          30% { opacity: 0; }
+          40% { opacity: 1; }
+          46% { opacity: 0; }
+          54% { opacity: 0.5; }
+          60% { opacity: 0; }
+          68% { opacity: 0.3; }
+          76% { opacity: 0; }
+          100% { opacity: 0; }
+        }
+        @keyframes sp1000navFlicker2 {
+          0% { opacity: 1; }
+          8% { opacity: 0; }
+          14% { opacity: 0.6; }
+          20% { opacity: 0; }
+          32% { opacity: 0.9; }
+          38% { opacity: 0; }
+          48% { opacity: 0.7; }
+          56% { opacity: 0; }
+          66% { opacity: 0.2; }
+          72% { opacity: 0; }
+          100% { opacity: 0; }
+        }
+        @keyframes sp1000navFlicker3 {
+          0% { opacity: 1; }
+          4% { opacity: 0; }
+          10% { opacity: 1; }
+          18% { opacity: 0; }
+          26% { opacity: 0.5; }
+          32% { opacity: 0; }
+          44% { opacity: 0.8; }
+          52% { opacity: 0; }
+          62% { opacity: 0.3; }
+          70% { opacity: 0; }
+          82% { opacity: 0.1; }
+          88% { opacity: 0; }
+          100% { opacity: 0; }
         }
         @keyframes sp1000restartThrob {
           0%, 100% { text-shadow: 0 0 8px rgba(255,255,255,0.6), 0 0 16px rgba(255,255,255,0.3); }
@@ -4260,7 +4321,7 @@ export default function Terminal({ stocks = [], today, onRefresh, loading, limit
                 />
               )}
               {bootChecked && !booted && <StartupOverlay onComplete={handleBootComplete} onFadeIn={handleBootFadeIn} />}
-              <PixelGlitchOverlay active={glitching} startAtGag={contactGag} stocks={stocks} today={today} onDismiss={() => { setGlitching(false); setGuideBlurred(false); setContactGag(false); }} onBlurStart={() => setGuideBlurred(true)} onReboot={() => setBooted(false)} />
+              <PixelGlitchOverlay active={glitching} startAtGag={contactGag} stocks={stocks} today={today} onDismiss={() => { setGlitching(false); setGuideBlurred(false); setContactGag(false); setRestartVisible(false); }} onBlurStart={() => setGuideBlurred(true)} onReboot={() => setBooted(false)} />
               {/* WhiteFlashOverlay removed — logo splash now part of StartupOverlay */}
               {timeMachineInput && (
                 <TimeMachineDateInput
@@ -4351,6 +4412,7 @@ export default function Terminal({ stocks = [], today, onRefresh, loading, limit
                       setGlitching(false);
                       setGuideBlurred(false);
                       setContactGag(false);
+                      setRestartVisible(false);
                       if (wasContact) setBooted(false);
                     }
                   };
@@ -4365,16 +4427,19 @@ export default function Terminal({ stocks = [], today, onRefresh, loading, limit
                   fontSize: 9,
                   letterSpacing: 2,
                   color: contactGag ? '#fff' : COLORS.amber,
-                  cursor: returnSliding ? 'default' : 'pointer',
+                  cursor: returnSliding || (contactGag && !restartVisible) ? 'default' : 'pointer',
                   textTransform: 'uppercase',
                   textShadow: contactGag
                     ? '0 0 8px rgba(255,255,255,0.8), 0 0 16px rgba(255,255,255,0.5)'
                     : '0 0 8px rgba(255,170,0,0.6)',
-                  animation: contactGag && !returnSliding ? 'sp1000restartThrob 1.5s ease-in-out infinite' : 'none',
-                  transition: 'left 0.7s ease-in-out, opacity 0.3s ease-in 0.55s',
+                  animation: contactGag && restartVisible && !returnSliding ? 'sp1000restartThrob 1.5s ease-in-out infinite' : 'none',
+                  transition: contactGag
+                    ? 'left 0.7s ease-in-out, opacity 1.2s ease-in'
+                    : 'left 0.7s ease-in-out, opacity 0.3s ease-in 0.55s',
                   position: 'absolute',
                   left: returnSliding ? 'calc(100% - 70px)' : 'calc(50% - 25px)',
-                  opacity: returnSliding ? 0 : 1,
+                  opacity: returnSliding ? 0 : (contactGag && !restartVisible ? 0 : 1),
+                  pointerEvents: contactGag && !restartVisible ? 'none' : 'auto',
                 }}
               >
                 {contactGag ? 'RESTART' : 'RETURN'}
@@ -4414,7 +4479,7 @@ export default function Terminal({ stocks = [], today, onRefresh, loading, limit
               {/* Key wrapper — changing navSweepKey remounts buttons, restarting sweep animation */}
               <React.Fragment key={`nav-sweep-${navSweepKey}`}>
               {[
-                { id: 'contact', label: 'CONTACT', morphLabel: 'RESTART', trigger: triggerContact, delay: '0.15s' },
+                { id: 'contact', label: 'CONTACT', morphLabel: 'CONTACT', noSlide: true, trigger: triggerContact, delay: '0.15s' },
                 { id: 'guide', label: 'GUIDE', morphLabel: 'RETURN', trigger: triggerGlitch, delay: '0.3s' },
                 { id: 'timemachine', label: 'TIME MACHINE', morphLabel: 'RETURN', trigger: triggerTimeMachine, delay: '0.45s' },
               ].map((btn, i) => {
@@ -4425,8 +4490,18 @@ export default function Terminal({ stocks = [], today, onRefresh, loading, limit
                     {i > 0 && <span style={{ width: 16, opacity: navSlideButton ? 0 : 1, transition: 'opacity 0.2s ease' }} />}
                     <span
                       onClick={() => {
-                        if (navSlideButton) return;
+                        if (navSlideButton || navFlicker) return;
                         if (glitching || showLogo || timeMachineAnimating) return;
+                        if (btn.noSlide) {
+                          // Contact: flicker all buttons like electrical disruption, then trigger
+                          setNavFlicker(true);
+                          setTimeout(() => {
+                            setNavFlicker(false);
+                            setNavSlideButton(btn.id);
+                            setTimeout(() => { btn.trigger(); setNavSlideButton(null); }, 80);
+                          }, 550);
+                          return;
+                        }
                         setNavSlideButton(btn.id);
                         setTimeout(() => {
                           btn.trigger();
@@ -4437,28 +4512,28 @@ export default function Terminal({ stocks = [], today, onRefresh, loading, limit
                         fontFamily: MONO,
                         fontSize: 9,
                         letterSpacing: 2,
-                        color: isSliding ? COLORS.amber : '#eee',
-                        textShadow: isSliding
+                        color: (isSliding && !btn.noSlide) ? COLORS.amber : '#eee',
+                        textShadow: (isSliding && !btn.noSlide)
                           ? '0 0 8px rgba(255,170,0,0.6)'
                           : '0 0 10px rgba(255,255,255,0.52), 0 0 20px rgba(255,255,255,0.22), 0 0 40px rgba(255,255,255,0.08)',
                         cursor: (glitching || showLogo || timeMachineAnimating || navSlideButton) ? 'default' : 'pointer',
                         textTransform: 'uppercase',
-                        opacity: isOtherSliding ? 0 : (navSlideButton ? 1 : 0),
+                        opacity: isOtherSliding ? 0 : (isSliding && btn.noSlide) ? 0 : (navSlideButton ? 1 : 0),
                         transition: navSlideButton
                           ? 'left 0.4s ease-in-out, opacity 0.2s ease, color 0.2s ease, text-shadow 0.2s ease'
                           : 'color 0.3s ease, text-shadow 0.3s ease',
-                        animationName: (!navSlideButton && booted) ? 'sp1000navFadeIn' : 'none',
-                        animationDuration: '0.5s',
-                        animationTimingFunction: 'ease-in',
+                        animationName: navFlicker ? `sp1000navFlicker${i}` : ((!navSlideButton && booted) ? 'sp1000navFadeIn' : 'none'),
+                        animationDuration: navFlicker ? '0.5s' : '0.5s',
+                        animationTimingFunction: navFlicker ? 'steps(1)' : 'ease-in',
                         animationFillMode: 'forwards',
-                        animationDelay: btn.delay,
-                        ...(isSliding ? {
+                        animationDelay: navFlicker ? `${i * 0.04}s` : btn.delay,
+                        ...((isSliding && !btn.noSlide) ? {
                           position: 'absolute',
                           left: 'calc(50% - 25px)',
                         } : {}),
                       }}
                     >
-                      {isSliding ? btn.morphLabel : btn.label}
+                      {(isSliding && !btn.noSlide) ? btn.morphLabel : btn.label}
                     </span>
                   </React.Fragment>
                 );
@@ -4479,8 +4554,8 @@ export default function Terminal({ stocks = [], today, onRefresh, loading, limit
                   filter: (showLogo || guideBlurred) ? 'brightness(1.5)' : 'brightness(1.2)',
                   cursor: (glitching && (!guideBlurred || contactGag)) ? 'default' : navSlideButton ? 'default' : 'pointer',
                   transition: 'color 0.3s ease, text-shadow 0.3s ease, filter 0.3s ease, opacity 0.2s ease',
-                  animation: returnDimming ? 'sp1000returnDim 0.6s ease-out forwards' : 'none',
-                  opacity: navSlideButton ? 0 : 1,
+                  animation: navFlicker ? 'sp1000navFlicker3 0.5s steps(1) 0.06s forwards' : (returnDimming ? 'sp1000returnDim 0.6s ease-out forwards' : 'none'),
+                  opacity: navSlideButton ? 0 : (navFlicker ? undefined : 1),
                 }}
               >
                 SP-1000
