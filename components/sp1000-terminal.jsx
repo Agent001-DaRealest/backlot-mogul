@@ -898,10 +898,10 @@ function PixelGlitchOverlay({ active, startAtGag, onDismiss, onBlurStart, onRebo
   const valCyan = { color: COLORS.blue };
   const valDim = { color: GUIDE_MUTED };
 
-  // Guide typography — uniform system: 16/15/12/11
-  const F = 11; // base font size for all body text
+  // Guide typography — uniform system: 19/18/14/13
+  const F = 13; // base font size for all body text
   const sectionHeader = {
-    fontFamily: MONO, fontSize: 15, letterSpacing: 3,
+    fontFamily: MONO, fontSize: 18, letterSpacing: 3,
     color: COLORS.green, marginTop: 18, marginBottom: 8,
     textShadow: '0 0 8px rgba(51,255,102,0.15)',
   };
@@ -918,6 +918,13 @@ function PixelGlitchOverlay({ active, startAtGag, onDismiss, onBlurStart, onRebo
     color: GUIDE_TEXT, paddingLeft: 12,
   };
   const tbl = { fontFamily: MONO, fontSize: F }; // shared table cell style
+  const sectionBox = {
+    border: `1px solid ${COLORS.dimmer}`,
+    borderRadius: 8,
+    padding: '12px 12px',
+    marginBottom: 14,
+    background: 'rgba(255,255,255,0.01)',
+  };
 
   if (!active && phase === 0) return null;
 
@@ -974,8 +981,8 @@ function PixelGlitchOverlay({ active, startAtGag, onDismiss, onBlurStart, onRebo
 
         {/* ═══ SECTION 1: HEADER ═══ */}
         <div style={{ fontFamily: MONO, letterSpacing: 3, color: COLORS.green, textAlign: 'center', lineHeight: 1.6, marginBottom: 12, textShadow: '0 0 8px rgba(51,255,102,0.3)' }}>
-          <div style={{ fontSize: 16 }}>SP-1000 LEAPS TERMINAL</div>
-          <div style={{ fontSize: 12, color: GUIDE_MUTED, letterSpacing: 2 }}>USER GUIDE v2.1</div>
+          <div style={{ fontSize: 19 }}>SP-1000 LEAPS TERMINAL</div>
+          <div style={{ fontSize: 14, color: GUIDE_MUTED, letterSpacing: 2 }}>USER GUIDE v2.1</div>
         </div>
 
         {/* ═══ OVERVIEW ═══ */}
@@ -986,9 +993,40 @@ function PixelGlitchOverlay({ active, startAtGag, onDismiss, onBlurStart, onRebo
           NOT FOR PUBLIC USE. NOT TO BE RELIED UPON IN ANY WAY. NOT INVESTMENT ADVICE. CONSULT YOUR FINANCIAL ADVISOR BEFORE TAKING ANY ACTION.
         </div>
 
+        {/* ═══ TABLE OF CONTENTS ═══ */}
+        <div style={{
+          borderTop: `1px solid ${COLORS.dimmer}`, borderBottom: `1px solid ${COLORS.dimmer}`,
+          padding: '12px 4px', marginBottom: 14, marginTop: 8,
+        }}>
+          <div style={{ fontFamily: MONO, fontSize: F - 2, color: COLORS.dim, letterSpacing: 3, marginBottom: 10 }}>
+            CONTENTS
+          </div>
+          {[
+            ['1', 'CONTROLS'],
+            ['2', 'COLUMNS'],
+            ['3', 'SCORING ENGINE'],
+            ['4', 'CLASSIFICATION'],
+            ['5', 'TEMPORAL NAVIGATION'],
+            ['6', 'SIGNAL REPLICATION SPECIFICATION'],
+            ['7', 'AI ANALYSIS PROMPT'],
+          ].map(([num, title]) => (
+            <div key={num} style={{
+              fontFamily: MONO, fontSize: F - 2, color: GUIDE_TEXT, lineHeight: 2.0,
+              display: 'flex', paddingLeft: 4,
+            }}>
+              <span style={{ color: COLORS.dim, minWidth: 24 }}>{num}.</span>
+              <span style={{ flex: 1, overflow: 'hidden' }}>
+                <span>{title}</span>
+                <span style={{ color: COLORS.dimmer }}>{' ·'.repeat(30)}</span>
+              </span>
+              <span style={{ color: COLORS.dim, marginLeft: 8 }}>{num}</span>
+            </div>
+          ))}
+        </div>
+
         {/* ═══ CONTROLS ═══ */}
-        <div style={{ ...sectionHeader, borderTop: `1px solid ${COLORS.dimmer}`, paddingTop: 10 }}>CONTROLS</div>
-        <div style={{ display: 'flex', gap: 10, marginBottom: 8, padding: '6px 4px', background: 'rgba(255,255,255,0.015)', borderRadius: 4 }}>
+        <div style={{ ...sectionHeader }}>CONTROLS</div>
+        <div style={{ ...sectionBox }}><div style={{ display: 'flex', gap: 10 }}>
           {/* Left column — DASHBOARD */}
           <div style={{ flex: 1, minWidth: 0 }}>
             <div style={{ ...subHeader, marginTop: 0, letterSpacing: 2 }}>DASHBOARD TAPS</div>
@@ -1024,11 +1062,11 @@ function PixelGlitchOverlay({ active, startAtGag, onDismiss, onBlurStart, onRebo
               </div>
             ))}
           </div>
-        </div>
+        </div></div>
 
         {/* ═══ DISPLAY COLUMNS (full width) ═══ */}
-        <div style={{ ...sectionHeader, borderTop: `1px solid ${COLORS.dimmer}`, paddingTop: 10 }}>COLUMNS</div>
-        <div style={{ marginBottom: 8 }}>
+        <div style={{ ...sectionHeader }}>COLUMNS</div>
+        <div style={{ ...sectionBox }}>
           {[
             { label: 'SIG', desc: 'G / Y / D signal light' },
             { label: 'PRICE/52W', desc: 'Price + 52W gauge' },
@@ -1044,11 +1082,12 @@ function PixelGlitchOverlay({ active, startAtGag, onDismiss, onBlurStart, onRebo
         </div>
 
         {/* ═══ TWO-COLUMN LAYOUT: SCORING + RIGHT COLUMN ═══ */}
-        <div style={{ display: 'flex', gap: 10 }}>
+        <div style={{ display: 'flex', gap: 12 }}>
           {/* LEFT COLUMN */}
           <div style={{ flex: 1.1, minWidth: 0 }}>
             {/* ═══ SCORING ENGINE ═══ */}
-            <div style={{ ...sectionHeader, borderTop: `1px solid ${COLORS.dimmer}`, paddingTop: 10 }}>SCORING ENGINE</div>
+            <div style={{ ...sectionHeader }}>SCORING ENGINE</div>
+            <div style={{ ...sectionBox }}>
             <div style={{ marginBottom: 8 }}>
               <div style={{ display: 'flex', padding: '3px 8px', background: 'rgba(255,255,255,0.02)' }}>
                 <span style={{ ...tbl, flex: 2, color: COLORS.blue, letterSpacing: 2 }}>COMPONENT</span>
@@ -1108,30 +1147,33 @@ function PixelGlitchOverlay({ active, startAtGag, onDismiss, onBlurStart, onRebo
                 <span style={{ ...tbl, color: GUIDE_MUTED }}>{'\u2264'} 1</span>
               </div>
             </div>
-          </div>
+          </div></div>
 
           {/* RIGHT COLUMN */}
           <div style={{ flex: 1, minWidth: 0 }}>
             {/* ═══ CLASSIFICATION ═══ */}
-            <div style={{ ...sectionHeader, borderTop: `1px solid ${COLORS.dimmer}`, paddingTop: 10 }}>CLASSIFICATION</div>
+            <div style={{ ...sectionHeader }}>CLASSIFICATION</div>
+            <div style={{ ...sectionBox }}>
             <div style={{ ...prose, lineHeight: 1.9, marginBottom: 8 }}>
               Every stock in the watchlist is classified as either <span style={{ color: COLORS.green }}>GREEN</span> + <span style={{ color: COLORS.amber }}>YELLOW</span> or <span style={{ color: COLORS.green }}>GREEN ONLY</span> based on backtested forward returns.
             </div>
             <div style={{ ...prose, lineHeight: 1.9, marginBottom: 8 }}>
               A <span style={{ color: COLORS.amber }}>YELLOW</span> reading on a <span style={{ color: COLORS.green }}>GREEN-only</span> stock displays as <span style={{ color: GUIDE_MUTED }}>DIM</span> — the terminal shows only actionable signals.
             </div>
-            <div style={{ ...prose, lineHeight: 1.9, marginBottom: 8 }}>
+            <div style={{ ...prose, lineHeight: 1.9, marginBottom: 0 }}>
               Classifications are reviewed as new performance data becomes available.
+            </div>
             </div>
           </div>
         </div>
 
         {/* ═══ TEMPORAL NAVIGATION (full width) ═══ */}
-        <div style={{ ...sectionHeader, borderTop: `1px solid ${COLORS.dimmer}`, paddingTop: 10 }}>TEMPORAL NAVIGATION</div>
+        <div style={{ ...sectionHeader }}>TEMPORAL NAVIGATION</div>
+        <div style={{ ...sectionBox }}>
         <div style={{ ...prose, marginBottom: 8 }}>
           The Time Machine transports the display to any historical date. All signals are recomputed using actual market data — 52-week ranges, price positions, drawdown detection, and earnings periods are recalculated at the target date. Returns shown are price-only. The SPY benchmark return over the same period is provided for comparison.
         </div>
-        <div style={{ display: 'flex', gap: 10, marginBottom: 8 }}>
+        <div style={{ display: 'flex', gap: 10 }}>
           {/* Left: Activation + Navigator */}
           <div style={{ flex: 1, minWidth: 0 }}>
             <div style={{ ...subHeader }}>{ARROW_R} ACTIVATION</div>
@@ -1169,9 +1211,11 @@ function PixelGlitchOverlay({ active, startAtGag, onDismiss, onBlurStart, onRebo
             </div>
           </div>
         </div>
+        </div>
 
         {/* ═══ SIGNAL REPLICATION SPECIFICATION ═══ */}
-        <div style={{ ...sectionHeader, borderTop: `1px solid ${COLORS.dimmer}`, paddingTop: 10 }}>SIGNAL REPLICATION SPECIFICATION</div>
+        <div style={{ ...sectionHeader }}>SIGNAL REPLICATION SPECIFICATION</div>
+        <div style={{ ...sectionBox }}>
 
         {/* ► SYSTEM CONSTANTS */}
         <div style={{ ...subHeader, marginTop: 4, marginBottom: 4 }}>{ARROW_R} SYSTEM CONSTANTS</div>
@@ -1309,9 +1353,11 @@ function PixelGlitchOverlay({ active, startAtGag, onDismiss, onBlurStart, onRebo
           <div>&nbsp;&nbsp;<span style={{ color: GUIDE_LABEL }}>R_spy</span> = ((SPY(t_now) − SPY(t)) / SPY(t)) × 100</div>
           <div>&nbsp;&nbsp;<span style={{ color: GUIDE_LABEL }}>α_net</span> = R_avg − R_spy &nbsp;&nbsp; <span style={{ color: GUIDE_MUTED }}>// alpha vs benchmark</span></div>
         </div>
+        </div>
 
         {/* ═══ AI ANALYSIS PROMPT ═══ */}
-        <div style={{ ...sectionHeader, borderTop: `1px solid ${COLORS.dimmer}`, paddingTop: 10 }}>AI ANALYSIS PROMPT</div>
+        <div style={{ ...sectionHeader }}>AI ANALYSIS PROMPT</div>
+        <div style={{ ...sectionBox }}>
 
         <div style={{ ...prose, marginBottom: 10 }}>
           Reference prompt for external AI analysis. Copy the text below and provide it to any large-language-model along with 3 ticker symbols to evaluate using the SP-1000 scoring methodology (simplified, without the classification signal filter).
@@ -1383,6 +1429,7 @@ function PixelGlitchOverlay({ active, startAtGag, onDismiss, onBlurStart, onRebo
           <div>1. [INSERT TICKER 1]</div>
           <div>2. [INSERT TICKER 2]</div>
           <div>3. [INSERT TICKER 3]</div>
+        </div>
         </div>
 
         {/* ═══ FOOTER ═══ */}
