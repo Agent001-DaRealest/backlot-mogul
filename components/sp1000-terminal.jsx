@@ -540,8 +540,6 @@ function NarrativeText({ segments }) {
 }
 
 function SignalExplainOverlay({ stock, sig, periodInfo, drawdown, onClose }) {
-  const segments = generateNarrative(stock, sig, periodInfo, drawdown);
-
   // Tier 2 stocks only show GREEN signals — demote YELLOW to DIM
   const isTier2 = stock.tier === 2;
   const effectiveScore = (isTier2 && sig.score === 2) ? 0 : sig.score;
@@ -553,6 +551,20 @@ function SignalExplainOverlay({ stock, sig, periodInfo, drawdown, onClose }) {
   const signalTextColor = effectiveScore >= 3 ? COLORS.green : effectiveScore === 2 ? COLORS.amber : '#ccc';
 
   const yahooUrl = `https://finance.yahoo.com/quote/${stock.sym}`;
+  const gaugeInfo = calcGauge(stock.price, stock.w52h, stock.w52l);
+
+  // Period color
+  const periodColor = periodInfo.period === 'QUIET' ? COLORS.red : periodInfo.period === 'CRUSH' ? COLORS.blue : COLORS.green;
+
+  // Floor reason
+  const floorApplied = sig.floor1 || sig.floor3;
+  const floorLabel = sig.floor3 ? 'CRISIS' : sig.floor1 ? 'NEAR LOW' : '';
+
+  // Shared styles
+  const rowSep = { height: 1, background: COLORS.dimmer, opacity: 0.4 };
+  const labelStyle = { fontFamily: MONO, fontSize: 11, color: COLORS.dim, letterSpacing: 1, fontWeight: 600, textTransform: 'uppercase' };
+  const scoreStyle = (val) => ({ fontFamily: MONO, fontSize: 14, color: val >= 0 ? COLORS.green : COLORS.red, fontWeight: 700 });
+  const reasonStyle = { fontFamily: MONO, fontSize: 11, color: COLORS.dim, lineHeight: 1.5, marginTop: 4 };
 
   return (
     <div
@@ -592,7 +604,7 @@ function SignalExplainOverlay({ stock, sig, periodInfo, drawdown, onClose }) {
           alignItems: 'center',
           paddingBottom: 16,
           borderBottom: `1px solid ${borderColor}`,
-          marginBottom: 20,
+          marginBottom: 16,
         }}>
           <span style={{ fontSize: 18, color: '#fff', fontFamily: MONO, fontWeight: 600, letterSpacing: 2 }}>
             {stock.sym} <span style={{ fontWeight: 400, color: COLORS.dim, fontSize: 13 }}>— SIGNAL ANALYSIS</span>
@@ -602,95 +614,182 @@ function SignalExplainOverlay({ stock, sig, periodInfo, drawdown, onClose }) {
           </span>
         </div>
 
-        {/* Narrative analysis */}
-        <div style={{ marginBottom: 24 }}>
-          <NarrativeText segments={segments} />
+        {/* ── PRICE SCORE ── */}
+        <div style={{ padding: '12px 0' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
+            <span style={labelStyle}>PRICE SCORE</span>
+            <span style={scoreStyle(sig.priceScore)}>{sig.priceScore >= 0 ? '+' : ''}{sig.priceScore}</span>
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginTop: 8 }}>
+            <GaugeVertical
+              filled={gaugeInfo.filled}
+              color={gaugeInfo.color}
+              rangePct={gaugeInfo.pct}
+              isExpensive={gaugeInfo.isExpensive}
+              price={stock.price}
+              w52l={stock.w52l}
+            />
+            <span style={{ fontFamily: MONO, fontSize: 11, color: COLORS.dim }}>
+              <span style={{ color: '#fff' }}>${stock.price.toFixed(2)}</span>
+              {' · 52W LOW '}
+              <span style={{ color: COLORS.red }}>${stock.w52l.toFixed(2)}</span>
+            </span>
+          </div>
+          <div style={reasonStyle}>
+            Trading <span style={{ color: sig.pctAboveLow <= 20 ? COLORS.green : sig.pctAboveLow <= 50 ? COLORS.amber : COLORS.red }}>{sig.pctAboveLow.toFixed(0)}%</span> above 52-week low
+          </div>
         </div>
+        <div style={rowSep} />
 
-        {/* Score calculation box */}
-        <div style={{
-          fontFamily: MONO,
-          fontSize: 13,
-          padding: 16,
-          border: `1px solid ${sig.isCrisis ? 'rgba(255,170,0,0.4)' : COLORS.dimmer}`,
-          borderRadius: 4,
-          marginBottom: 20,
-          position: 'relative',
-          overflow: 'hidden',
-        }}>
-          {/* Crisis throb sweep overlay */}
+        {/* ── HIGH PENALTY ── */}
+        <div style={{ padding: '12px 0' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
+            <span style={labelStyle}>HIGH PENALTY</span>
+            <span style={scoreStyle(sig.nearHighPenalty)}>{sig.nearHighPenalty >= 0 ? '+' : ''}{sig.nearHighPenalty}</span>
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginTop: 8 }}>
+            <GaugeVertical
+              filled={gaugeInfo.filled}
+              color={gaugeInfo.color}
+              rangePct={gaugeInfo.pct}
+              isExpensive={gaugeInfo.isExpensive}
+              price={stock.price}
+              w52l={stock.w52l}
+            />
+            <span style={{ fontFamily: MONO, fontSize: 11, color: COLORS.dim }}>
+              <span style={{ color: '#fff' }}>${stock.price.toFixed(2)}</span>
+              {' · 52W HIGH '}
+              <span style={{ color: COLORS.green }}>${stock.w52h.toFixed(2)}</span>
+            </span>
+          </div>
+          <div style={reasonStyle}>
+            Trading <span style={{ color: sig.pctBelowHigh >= 20 ? COLORS.green : COLORS.red }}>{sig.pctBelowHigh.toFixed(0)}%</span> below 52-week high{sig.nearHighPenalty < 0 ? ' — near-high penalty' : ''}
+          </div>
+        </div>
+        <div style={rowSep} />
+
+        {/* ── CRISIS BONUS ── */}
+        <div style={{ padding: '12px 0', position: 'relative', overflow: 'hidden' }}>
           {sig.isCrisis && (
             <div style={{
-              position: 'absolute', top: 0, bottom: 0, left: 0, right: 0,
-              background: 'linear-gradient(90deg, rgba(255,204,0,0.12) 0%, rgba(255,180,0,0.20) 30%, rgba(255,204,0,0.12) 70%, transparent 100%)',
+              position: 'absolute', top: 0, bottom: 0, left: -28, right: -28,
+              background: 'linear-gradient(90deg, rgba(255,204,0,0.08) 0%, rgba(255,180,0,0.15) 30%, rgba(255,204,0,0.08) 70%, transparent 100%)',
               animation: 'sp1000crisisThrob 3s ease-in-out infinite',
               pointerEvents: 'none',
             }} />
           )}
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8, position: 'relative', zIndex: 1 }}>
-            <div style={{ color: COLORS.dim, fontSize: 11, letterSpacing: 1 }}>SCORE CALCULATION:</div>
-            {sig.isCrisis && (
-              <div style={{
-                display: 'inline-flex', alignItems: 'center', gap: 5,
-                padding: '2px 8px',
-                border: '1px solid rgba(255,170,0,0.6)',
-                borderRadius: 3,
-                backgroundColor: 'rgba(255,140,0,0.08)',
-              }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', position: 'relative', zIndex: 1 }}>
+            <span style={labelStyle}>CRISIS BONUS</span>
+            <span style={scoreStyle(sig.crisisBonus)}>{sig.crisisBonus >= 0 ? '+' : ''}{sig.crisisBonus}</span>
+          </div>
+          <div style={{ ...reasonStyle, position: 'relative', zIndex: 1, display: 'flex', alignItems: 'center', gap: 8 }}>
+            {sig.isCrisis ? (
+              <>
                 <span style={{
-                  width: 5, height: 5, borderRadius: '50%',
+                  width: 6, height: 6, borderRadius: '50%',
                   backgroundColor: COLORS.amber,
                   boxShadow: '0 0 4px rgba(255,170,0,0.8), 0 0 8px rgba(255,170,0,0.4)',
                   animation: 'sp1000crisisThrob 3s ease-in-out infinite',
                   flexShrink: 0,
                 }} />
-                <span style={{
-                  fontFamily: MONO, fontSize: 8, letterSpacing: 2,
-                  color: COLORS.amber, fontWeight: 600,
-                  textShadow: '0 0 6px rgba(255,170,0,0.4)',
-                  whiteSpace: 'nowrap',
-                }}>
-                  CRISIS MODE ACTIVE
+                <span>
+                  <span style={{ color: COLORS.red }}>{Math.abs(drawdown.pctChange).toFixed(1)}%</span> drop in <span style={{ color: '#fff' }}>{drawdown.days}</span> trading days
                 </span>
-              </div>
+              </>
+            ) : (
+              <span>No rapid drawdown detected</span>
             )}
           </div>
-          <div style={{ position: 'relative', zIndex: 1 }}>
-            {[
-              { label: 'PRICE', val: sig.priceScore },
-              { label: 'HIGH', val: sig.nearHighPenalty },
-              { label: 'CRISIS', val: sig.crisisBonus },
-              { label: 'PERIOD', val: sig.periodBonus },
-            ].map((item, i) => (
-              <React.Fragment key={item.label}>
-                {i > 0 && <span style={{ color: COLORS.dimmer }}> + </span>}
-                <span style={{ color: COLORS.dim }}>{item.label}(</span>
-                <span style={{ color: item.val >= 0 ? COLORS.green : COLORS.red, fontWeight: 600 }}>{item.val}</span>
-                <span style={{ color: COLORS.dim }}>)</span>
-              </React.Fragment>
-            ))}
-            <span style={{ color: COLORS.dimmer }}> = </span>
-            <span style={{ color: sig.score >= 0 ? COLORS.green : COLORS.red, fontWeight: 700 }}>{sig.score}</span>
+        </div>
+        <div style={rowSep} />
+
+        {/* ── PERIOD ── */}
+        <div style={{ padding: '12px 0' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
+            <span style={labelStyle}>PERIOD</span>
+            <span style={scoreStyle(sig.periodBonus)}>{sig.periodBonus >= 0 ? '+' : ''}{sig.periodBonus}</span>
+          </div>
+          <div style={reasonStyle}>
+            <span style={{ color: periodColor, fontWeight: 600 }}>{periodInfo.period}</span>
+            {' · '}
+            {periodInfo.period === 'QUIET' && (
+              <span>{periodInfo.left} days to earnings (<span style={{ color: COLORS.blue }}>{stock.nextEarn}</span>)</span>
+            )}
+            {periodInfo.period === 'CRUSH' && (
+              <span>Post-earnings crush window (<span style={{ color: COLORS.blue }}>{stock.lastEarn}</span>)</span>
+            )}
+            {periodInfo.period === 'OPEN' && (
+              <span>{periodInfo.left} days to quarter end (<span style={{ color: COLORS.blue }}>{stock.qtrEnd}</span>)</span>
+            )}
           </div>
         </div>
 
-        {/* DISMISS button — matches RETURN amber styling */}
-        <div style={{ textAlign: 'center', paddingTop: 12, paddingBottom: 4 }}>
+        {/* ── TOTAL ── */}
+        <div style={{
+          borderTop: `2px solid ${borderColor}`,
+          paddingTop: 16,
+          marginTop: 4,
+        }}>
+          <div style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'baseline', gap: 8, marginBottom: 6 }}>
+            <span style={{ fontFamily: MONO, fontSize: 11, color: COLORS.dim, letterSpacing: 1 }}>TOTAL =</span>
+            <span style={{ fontFamily: MONO, fontSize: 20, color: sig.score >= 0 ? COLORS.green : COLORS.red, fontWeight: 700 }}>{sig.score}</span>
+          </div>
+          {floorApplied && (
+            <div style={{ textAlign: 'right', marginBottom: 6 }}>
+              <span style={{ fontFamily: MONO, fontSize: 10, color: COLORS.amber, letterSpacing: 1 }}>
+                FLOOR: {floorLabel} → MIN 2
+              </span>
+            </div>
+          )}
+          <div style={{ textAlign: 'right' }}>
+            <span style={{ fontFamily: MONO, fontSize: 11, color: COLORS.dim, marginRight: 8 }}>SIGNAL:</span>
+            <span style={{
+              fontFamily: MONO, fontSize: 13, color: signalTextColor, fontWeight: 700, letterSpacing: 2,
+              textShadow: effectiveScore >= 3
+                ? '0 0 8px rgba(51,255,102,0.6), 0 0 16px rgba(51,255,102,0.3)'
+                : effectiveScore === 2
+                  ? '0 0 8px rgba(255,204,0,0.6), 0 0 16px rgba(255,204,0,0.3)'
+                  : 'none',
+            }}>
+              {signalLabel}
+            </span>
+          </div>
+        </div>
+
+        {/* ── Footer: verify + dismiss ── */}
+        <div style={{
+          borderTop: `1px solid ${COLORS.dimmer}`,
+          marginTop: 16,
+          paddingTop: 14,
+          paddingBottom: 4,
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+        }}>
+          <a
+            href={yahooUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            style={{ fontFamily: MONO, fontSize: 10, color: COLORS.dim, textDecoration: 'underline', opacity: 0.7 }}
+            onClick={e => e.stopPropagation()}
+          >
+            Verify: Yahoo Finance ↗
+          </a>
           <span
             onClick={onClose}
             style={{
               fontFamily: MONO,
               fontSize: 11,
               letterSpacing: 3,
-              color: COLORS.amber,
+              color: '#fff',
               backgroundColor: 'transparent',
-              border: '1px solid rgba(255,170,0,0.5)',
+              border: '1px solid rgba(255,255,255,0.5)',
               padding: '6px 24px',
               borderRadius: 4,
               cursor: 'pointer',
               textTransform: 'uppercase',
               fontWeight: 500,
-              textShadow: '0 0 8px rgba(255,170,0,0.6)',
+              textShadow: '0 0 6px rgba(255,255,255,0.3)',
             }}
           >
             DISMISS
@@ -1075,7 +1174,6 @@ function PixelGlitchOverlay({ active, startAtGag, stocks: guideStocks, today: gu
         right: 0,
         bottom: 0,
         backgroundColor: COLORS.screen,
-        transform: phase === 0 ? 'translateX(100%)' : 'translateX(0%)',
         display: 'flex',
         flexDirection: 'column',
         padding: '20px 12px 12px',
@@ -1083,10 +1181,9 @@ function PixelGlitchOverlay({ active, startAtGag, stocks: guideStocks, today: gu
         overflowX: 'hidden',
         overflowY: 'auto',
         WebkitOverflowScrolling: 'touch',
-        transition: 'transform 0.9s ease-in-out, filter 1.5s ease-in, opacity 1.5s ease-in',
+        transition: 'opacity 0.3s ease-in, filter 1.5s ease-in',
         filter: phase >= 2 ? 'blur(12px)' : 'blur(0px)',
-        opacity: phase >= 2 ? 0 : 1,
-        boxShadow: phase < 2 ? '-8px 0 24px rgba(0,0,0,0.5)' : 'none',
+        opacity: phase === 0 ? 0 : (phase >= 2 ? 0 : 1),
       }}>
 
         {/* ═══ SECTION 1: HEADER ═══ */}
@@ -1232,8 +1329,8 @@ function PixelGlitchOverlay({ active, startAtGag, stocks: guideStocks, today: gu
 
                     return (
                       <div key={i} style={{ display: 'flex', alignItems: 'center', padding: '2px 2px', gap: 6 }}>
-                        <span style={{ fontFamily: MONO, fontSize: F - 3, color: isCurrent ? COLORS.amber : 'transparent', width: 10, flexShrink: 0 }}>
-                          {isCurrent ? ARROW_R : ''}
+                        <span style={{ fontFamily: MONO, fontSize: F - 3, color: 'transparent', width: 10, flexShrink: 0 }}>
+                          {''}
                         </span>
                         <span style={{ fontFamily: MONO, fontSize: F - 2, color: GUIDE_MUTED, width: 32, textAlign: 'right', flexShrink: 0 }}>
                           {row.price}
@@ -1260,36 +1357,29 @@ function PixelGlitchOverlay({ active, startAtGag, stocks: guideStocks, today: gu
                 <div style={{ fontFamily: MONO, fontSize: F - 3, color: GUIDE_MUTED, marginTop: 4, paddingLeft: 2 }}>
                   Tap gauge for exact %. Tap price for 52W low.
                 </div>
+
+                {/* ── CRISIS MODE — sub-section within 52W Gauge box ── */}
+                <div style={{ height: 1, background: COLORS.dimmer, margin: '8px 0', opacity: 0.5 }} />
+                <div style={{ position: 'relative', overflow: 'hidden' }}>
+                  {/* Crisis throb overlay */}
+                  <div style={{
+                    position: 'absolute', top: 0, bottom: 0, left: 0, right: 0,
+                    background: 'linear-gradient(90deg, rgba(255,204,0,0.08) 0%, rgba(255,180,0,0.15) 30%, rgba(255,204,0,0.08) 70%, transparent 100%)',
+                    animation: 'sp1000crisisThrob 3s ease-in-out infinite',
+                    pointerEvents: 'none',
+                  }} />
+                  <div style={{ position: 'relative', zIndex: 1 }}>
+                    <div style={{ fontFamily: MONO, fontSize: F, color: COLORS.amber, letterSpacing: 2, fontWeight: 'bold' }}>
+                      CRISIS MODE
+                    </div>
+                    <div style={{ fontFamily: MONO, fontSize: F - 2, color: GUIDE_TEXT, marginTop: 2, lineHeight: 1.4 }}>
+                      {'>'}8% drop in 7 trading days.
+                    </div>
+                  </div>
+                </div>
               </div>
             );
           })()}
-
-          {/* ── CRISIS MODE — single box with integrated throb sweep ── */}
-          <div style={{
-            border: `1px solid ${COLORS.amber}44`,
-            borderRadius: 4,
-            padding: guideIsMobile ? '5px 8px' : '6px 10px',
-            marginTop: 8,
-            position: 'relative',
-            overflow: 'hidden',
-            background: 'rgba(0,0,0,0.3)',
-          }}>
-            {/* Crisis throb overlay — identical to StockRow */}
-            <div style={{
-              position: 'absolute', top: 0, bottom: 0, left: 0, right: 0,
-              background: 'linear-gradient(90deg, rgba(255,204,0,0.12) 0%, rgba(255,180,0,0.20) 30%, rgba(255,204,0,0.12) 70%, transparent 100%)',
-              animation: 'sp1000crisisThrob 3s ease-in-out infinite',
-              pointerEvents: 'none',
-            }} />
-            <div style={{ position: 'relative', zIndex: 1 }}>
-              <div style={{ fontFamily: MONO, fontSize: F, color: COLORS.amber, letterSpacing: 2, fontWeight: 'bold' }}>
-                CRISIS MODE
-              </div>
-              <div style={{ fontFamily: MONO, fontSize: F - 2, color: GUIDE_TEXT, marginTop: 2, lineHeight: 1.4 }}>
-                {'>'}8% drop in 7 trading days. See signal analysis for details.
-              </div>
-            </div>
-          </div>
         </div>
 
         {/* ═══ TABLE OF CONTENTS ═══ */}
@@ -1908,9 +1998,9 @@ function StockRow({ children, isLast, hasGreenSignal, hasYellowSignal, compact, 
           bottom: 0,
           left: '-60%',
           width: '60%',
-          background: 'radial-gradient(ellipse 80% 100% at center, rgba(255,204,0,0.50) 0%, rgba(255,204,0,0.18) 30%, transparent 55%)',
+          background: 'radial-gradient(ellipse 80% 100% at center, rgba(255,204,0,0.38) 0%, rgba(255,204,0,0.14) 30%, transparent 55%)',
           animation: 'sp1000yellowSweep 3s ease-in-out infinite',
-          filter: 'brightness(1.8)',
+          filter: 'brightness(1.35)',
           pointerEvents: 'none',
         }} />
       )}
@@ -3591,7 +3681,7 @@ function TimeMachineBlueprintOverlay({ stocks, historicalDate, onReturn, onEnter
             const tmNavBtnStyle = {
               fontFamily: MONO, fontSize: 10, letterSpacing: 1,
               color: COLORS.amber, cursor: 'pointer',
-              padding: '5px 8px',
+              padding: '5px 12px',
               display: 'inline-flex', alignItems: 'center', gap: 4,
               textShadow: '0 0 6px rgba(255,170,0,0.4)',
               transition: 'all 0.2s ease',
@@ -3605,12 +3695,12 @@ function TimeMachineBlueprintOverlay({ stocks, historicalDate, onReturn, onEnter
                     <span
                       onClick={onEnterNewDate}
                       style={{
-                        fontFamily: MONO, fontSize: 10, letterSpacing: 1,
-                        color: COLORS.amber, cursor: 'pointer', padding: '5px 14px',
-                        border: '1px solid rgba(255,170,0,0.5)',
+                        fontFamily: MONO, fontSize: 9, letterSpacing: 4,
+                        color: '#fff', cursor: 'pointer', padding: '5px 14px',
+                        border: '1px solid rgba(255,255,255,0.5)',
                         borderRadius: 6,
                         display: 'inline-block',
-                        textShadow: '0 0 6px rgba(255,170,0,0.4)',
+                        textShadow: '0 0 6px rgba(255,255,255,0.4)',
                         transition: 'all 0.2s ease',
                       }}
                     >
@@ -3618,39 +3708,23 @@ function TimeMachineBlueprintOverlay({ stocks, historicalDate, onReturn, onEnter
                     </span>
                     <span style={{
                       fontFamily: MONO, fontSize: 7, letterSpacing: 2,
-                      color: COLORS.amber, opacity: 0.5,
+                      color: '#fff', opacity: 0.5,
                     }}>
                       2016 – 2026
                     </span>
                   </div>
                 )}
-                {/* Time travel navigation row */}
-                <div style={{
-                  display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-                  width: '100%', padding: '0 12px', boxSizing: 'border-box',
-                  gap: 12,
-                }}>
-                  <div style={{ flex: '1 1 0', display: 'flex', justifyContent: 'flex-start' }}>
-                    {prev && (
-                      <span
-                        onClick={() => onNavigate(prev)}
-                        style={tmNavBtnStyle}
-                      >
-                        {'\u25C2'} BACK IN TIME
-                      </span>
-                    )}
+                {/* Time travel navigation — back only */}
+                {prev && (
+                  <div style={{ display: 'flex', justifyContent: 'flex-start', width: '100%', padding: '0 12px', boxSizing: 'border-box' }}>
+                    <span
+                      onClick={() => onNavigate(prev)}
+                      style={tmNavBtnStyle}
+                    >
+                      {'\u25C2'} JUMP BACK IN TIME
+                    </span>
                   </div>
-                  <div style={{ flex: '1 1 0', display: 'flex', justifyContent: 'flex-end' }}>
-                    {next && (
-                      <span
-                        onClick={() => onNavigate(next)}
-                        style={tmNavBtnStyle}
-                      >
-                        FORWARD IN TIME {'\u25B8'}
-                      </span>
-                    )}
-                  </div>
-                </div>
+                )}
               </div>
             );
           })()}
@@ -3687,6 +3761,7 @@ export default function Terminal({ stocks = [], today, onRefresh, loading, limit
   const [navSweepKey, setNavSweepKey] = useState(0); // Increment to retrigger nav button sweep animation
   const [navSlideButton, setNavSlideButton] = useState(null); // Which nav button is sliding to center ('contact'|'guide'|'timemachine')
   const [navFlicker, setNavFlicker] = useState(false); // Electrical flicker on contact click
+  const [navSurge, setNavSurge] = useState(false); // Brightness surge when SP-1000 pressed on home
   const [restartVisible, setRestartVisible] = useState(false); // Delayed reveal of RESTART during contact gag
   const [returnScreenFade, setReturnScreenFade] = useState(false); // Gentle screen fade when RETURN dismisses overlay
   const [signalOverlayOpen, setSignalOverlayOpen] = useState(false); // Signal analysis card is showing
@@ -3870,11 +3945,12 @@ export default function Terminal({ stocks = [], today, onRefresh, loading, limit
     if (glitching) { setGlitching(false); setGuideBlurred(false); setContactGag(false); setRestartVisible(false); return; }
     if (timeMachineInput) { setTimeMachineInput(false); return; }
     if (timeMachineDate && !wormholeActive) { triggerReturnToPresent(); return; }
-    // Already on main terminal — dim and relight the screen
+    // Already on main terminal — surge all buttons and relight the screen
     if (screenRelight) return;
+    setNavSurge(true);
     setScreenRelight(true);
-    // Retrigger nav button sweep when screen relights
-    setTimeout(() => setNavSweepKey(k => k + 1), 400);
+    // Clear surge after animation completes
+    setTimeout(() => setNavSurge(false), 650);
   };
 
   return (
@@ -3933,9 +4009,9 @@ export default function Terminal({ stocks = [], today, onRefresh, loading, limit
         }
         @keyframes sp1000yellowSweep {
           0% { transform: translateX(0%); opacity: 0; }
-          6% { opacity: 1; filter: brightness(2.2); }
-          50% { filter: brightness(1.5); }
-          80% { opacity: 1; filter: brightness(1.2); }
+          6% { opacity: 0.75; filter: brightness(1.65); }
+          50% { filter: brightness(1.12); }
+          80% { opacity: 0.75; filter: brightness(0.9); }
           100% { transform: translateX(320%); opacity: 0; filter: brightness(1); }
         }
         @keyframes sp1000crisisThrob {
@@ -3980,6 +4056,25 @@ export default function Terminal({ stocks = [], today, onRefresh, loading, limit
         @keyframes sp1000navFadeIn {
           0% { opacity: 0; }
           100% { opacity: 1; }
+        }
+        @keyframes sp1000returnGlow {
+          0% { filter: brightness(0.4); text-shadow: 0 0 2px rgba(255,255,255,0.2); }
+          50% { filter: brightness(1.8); text-shadow: 0 0 12px rgba(255,255,255,1), 0 0 24px rgba(255,255,255,0.6), 0 0 40px rgba(255,255,255,0.3); }
+          100% { filter: brightness(1); text-shadow: 0 0 8px rgba(255,255,255,0.6), 0 0 16px rgba(255,255,255,0.3); }
+        }
+        @keyframes sp1000navSurge {
+          0% { filter: brightness(1); }
+          12% { filter: brightness(2); text-shadow: 0 0 12px rgba(255,255,255,0.9), 0 0 24px rgba(255,255,255,0.5); }
+          30% { filter: brightness(1.6); text-shadow: 0 0 10px rgba(255,255,255,0.7), 0 0 20px rgba(255,255,255,0.3); }
+          60% { filter: brightness(1.2); text-shadow: 0 0 10px rgba(255,255,255,0.52), 0 0 20px rgba(255,255,255,0.22); }
+          100% { filter: brightness(1); text-shadow: 0 0 10px rgba(255,255,255,0.52), 0 0 20px rgba(255,255,255,0.22), 0 0 40px rgba(255,255,255,0.08); }
+        }
+        @keyframes sp1000navCrossfade {
+          0% { opacity: 1; filter: brightness(1); }
+          20% { opacity: 0.8; filter: brightness(0.9); }
+          50% { opacity: 0.4; filter: brightness(0.7); }
+          80% { opacity: 0.1; filter: brightness(0.5); }
+          100% { opacity: 0; filter: brightness(0.3); }
         }
         @keyframes sp1000navFlicker0 {
           0% { opacity: 1; }
@@ -4461,16 +4556,16 @@ export default function Terminal({ stocks = [], today, onRefresh, loading, limit
                   fontFamily: MONO,
                   fontSize: 9,
                   letterSpacing: 2,
-                  color: contactGag ? '#fff' : COLORS.amber,
+                  color: '#fff',
                   cursor: returnSliding || (contactGag && !restartVisible) ? 'default' : 'pointer',
                   textTransform: 'uppercase',
-                  textShadow: contactGag
-                    ? '0 0 8px rgba(255,255,255,0.8), 0 0 16px rgba(255,255,255,0.5)'
-                    : '0 0 8px rgba(255,170,0,0.6)',
-                  animation: contactGag && restartVisible && !returnSliding ? 'sp1000restartThrob 1.5s ease-in-out infinite' : 'none',
+                  textShadow: '0 0 8px rgba(255,255,255,0.6), 0 0 16px rgba(255,255,255,0.3)',
+                  animation: contactGag && restartVisible && !returnSliding
+                    ? 'sp1000restartThrob 1.5s ease-in-out 0.8s infinite'
+                    : (!returnSliding && !contactGag ? 'sp1000returnGlow 1.5s ease-out forwards' : 'none'),
                   transition: contactGag
                     ? 'left 0.7s ease-in-out, opacity 1.2s ease-in'
-                    : 'left 0.7s ease-in-out, opacity 0.3s ease-in 0.55s',
+                    : 'left 0.7s ease-in-out, opacity 0.25s ease-in 0.45s',
                   position: 'absolute',
                   left: returnSliding ? 'calc(100% - 70px)' : 'calc(50% - 25px)',
                   opacity: returnSliding ? 0 : (contactGag && !restartVisible ? 0 : 1),
@@ -4542,12 +4637,12 @@ export default function Terminal({ stocks = [], today, onRefresh, loading, limit
                           }, 550);
                           return;
                         }
-                        // Guide/TM: fade all buttons out, then trigger (overlay toolbar takes over with RETURN)
+                        // Guide/TM: crossfade all buttons out from center, then trigger (overlay toolbar takes over with RETURN)
                         setNavSlideButton(btn.id);
                         setTimeout(() => {
                           btn.trigger();
                           setNavSlideButton(null);
-                        }, 300);
+                        }, 500);
                       }}
                       style={{
                         fontFamily: MONO,
@@ -4557,15 +4652,25 @@ export default function Terminal({ stocks = [], today, onRefresh, loading, limit
                         textShadow: '0 0 10px rgba(255,255,255,0.52), 0 0 20px rgba(255,255,255,0.22), 0 0 40px rgba(255,255,255,0.08)',
                         cursor: (glitching || showLogo || timeMachineAnimating || navSlideButton) ? 'default' : 'pointer',
                         textTransform: 'uppercase',
-                        opacity: navSlideButton ? 0 : undefined,
+                        opacity: navSlideButton ? undefined : (!booted ? 0 : undefined),
                         transition: navSlideButton
-                          ? 'opacity 0.25s ease-out'
+                          ? 'none'
                           : 'color 0.3s ease, text-shadow 0.3s ease',
-                        animationName: navFlicker ? `sp1000navFlicker${i}` : ((!navSlideButton && booted) ? 'sp1000navFadeIn' : 'none'),
-                        animationDuration: navFlicker ? '0.5s' : '0.6s',
-                        animationTimingFunction: navFlicker ? 'steps(1)' : 'ease-in',
-                        animationFillMode: 'forwards',
-                        animationDelay: navFlicker ? `${i * 0.04}s` : '0s',
+                        animationName: navFlicker
+                          ? `sp1000navFlicker${i}`
+                          : navSurge
+                            ? 'sp1000navSurge'
+                            : navSlideButton
+                              ? 'sp1000navCrossfade'
+                              : (booted ? 'sp1000navFadeIn' : 'none'),
+                        animationDuration: navFlicker ? '0.5s' : (navSurge ? '0.6s' : (navSlideButton ? '0.35s' : '0.6s')),
+                        animationTimingFunction: navFlicker ? 'steps(1)' : 'ease-out',
+                        animationFillMode: navSurge ? 'none' : 'forwards',
+                        animationDelay: navFlicker
+                          ? `${i * 0.04}s`
+                          : navSlideButton
+                            ? `${(2 - i) * 0.06}s`
+                            : '0s',
                       }}
                     >
                       {btn.label}
@@ -4574,7 +4679,7 @@ export default function Terminal({ stocks = [], today, onRefresh, loading, limit
                 );
               })}
               </React.Fragment>
-              <span style={{ flex: 1, opacity: navSlideButton ? 0 : 1, transition: 'opacity 0.2s ease' }} />
+              <span style={{ flex: 1, opacity: navSlideButton ? 0 : 1, transition: navSlideButton ? 'opacity 0.2s ease-out 0.06s' : 'opacity 0.2s ease' }} />
               <span
                 onClick={navSlideButton ? undefined : (signalOverlayOpen && signalCloseRef.current ? signalCloseRef.current : triggerLogo)}
                 style={{
@@ -4589,8 +4694,14 @@ export default function Terminal({ stocks = [], today, onRefresh, loading, limit
                   filter: (showLogo || guideBlurred) ? 'brightness(1.5)' : 'brightness(1.2)',
                   cursor: (glitching && (!guideBlurred || contactGag)) ? 'default' : navSlideButton ? 'default' : 'pointer',
                   transition: 'color 0.3s ease, text-shadow 0.3s ease, filter 0.3s ease, opacity 0.2s ease',
-                  animation: navFlicker ? 'sp1000navFlicker3 0.5s steps(1) 0.06s forwards' : (returnDimming ? 'sp1000returnDim 0.6s ease-out forwards' : 'none'),
-                  opacity: navSlideButton ? 0 : (navFlicker ? undefined : 1),
+                  animation: navFlicker
+                    ? 'sp1000navFlicker3 0.5s steps(1) 0.06s forwards'
+                    : navSurge
+                      ? 'sp1000navSurge 0.6s ease-out'
+                      : navSlideButton
+                        ? 'sp1000navCrossfade 0.35s ease-out 0s forwards'
+                        : (returnDimming ? 'sp1000returnDim 0.6s ease-out forwards' : 'none'),
+                  opacity: navSlideButton ? undefined : (navFlicker ? undefined : 1),
                 }}
               >
                 SP-1000
