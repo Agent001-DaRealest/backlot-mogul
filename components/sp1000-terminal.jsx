@@ -595,7 +595,6 @@ function SignalExplainOverlay({ stock, sig, periodInfo, drawdown, onClose }) {
           animation: 'sp1000overlayOpen 0.2s ease-out',
           padding: '24px 28px',
         }}
-        onClick={e => e.stopPropagation()}
       >
         {/* Header */}
         <div style={{
