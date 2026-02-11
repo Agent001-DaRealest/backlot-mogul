@@ -3800,6 +3800,7 @@ export default function Terminal({ stocks = [], today, onRefresh, loading, limit
   const [returnScreenFade, setReturnScreenFade] = useState(false); // Gentle screen fade when RETURN dismisses overlay
   const [signalOverlayOpen, setSignalOverlayOpen] = useState(false); // Signal analysis card is showing
   const signalCloseRef = React.useRef(null); // Ref to close signal overlay from toolbar
+  const navBootedRef = React.useRef(false); // Tracks whether initial nav fade-in has played
 
   // Clear returnSliding once the overlay conditions have resolved
   const overlayActive = !!(timeMachineDate || timeMachineAnimating || timeMachineInput || (glitching && (!guideBlurred || contactGag)));
@@ -3846,6 +3847,8 @@ export default function Terminal({ stocks = [], today, onRefresh, loading, limit
     // Overlay is fully dismissed — remove it from DOM and ensure terminal is visible
     setBootFade(true);
     setBooted(true);
+    // Mark nav fade-in as done so it doesn't replay after navSurge clears
+    setTimeout(() => { navBootedRef.current = true; }, 700);
   }, []);
 
   const triggerReturnToPresent = React.useCallback(() => {
@@ -3972,6 +3975,7 @@ export default function Terminal({ stocks = [], today, onRefresh, loading, limit
     if (!booted) {
       // Skip startup animation entirely
       setBooted(true);
+      navBootedRef.current = true;
       requestAnimationFrame(() => setBootFade(true));
       return;
     }
@@ -4715,7 +4719,7 @@ export default function Terminal({ stocks = [], today, onRefresh, loading, limit
                             ? 'sp1000navSurge'
                             : navSlideButton
                               ? 'sp1000navCrossfade'
-                              : (booted ? 'sp1000navFadeIn' : 'none'),
+                              : (booted && !navBootedRef.current ? 'sp1000navFadeIn' : 'none'),
                         animationDuration: navFlicker ? '0.5s' : (navSurge ? '0.6s' : (navSlideButton ? '0.35s' : '0.6s')),
                         animationTimingFunction: navFlicker ? 'steps(1)' : 'ease-out',
                         animationFillMode: navSurge ? 'none' : 'forwards',
