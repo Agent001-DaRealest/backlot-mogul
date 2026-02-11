@@ -729,7 +729,7 @@ function SignalExplainOverlay({ stock, sig, periodInfo, drawdown, onClose }) {
           <div style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'baseline', gap: 8, marginBottom: 6 }}>
             <span style={{ fontFamily: MONO, fontSize: 11, color: '#ffffff', letterSpacing: 2, fontWeight: 600 }}>TOTAL</span>
             <span style={{
-              fontFamily: MONO, fontSize: 11, fontWeight: 700, letterSpacing: 1,
+              fontFamily: MONO, fontSize: 13, fontWeight: 700, letterSpacing: 1,
               color: sig.score >= 0 ? '#ffffff' : COLORS.red,
               textShadow: passes
                 ? '0 0 10px rgba(51,255,102,0.7), 0 0 24px rgba(51,255,102,0.35)'
@@ -739,7 +739,7 @@ function SignalExplainOverlay({ stock, sig, periodInfo, drawdown, onClose }) {
           {floorApplied && (
             <div style={{ textAlign: 'right', marginBottom: 4 }}>
               <span style={{ fontFamily: MONO, fontSize: 9, color: COLORS.amber, letterSpacing: 1 }}>
-                FLOOR: {floorLabel} → MIN 2
+                {floorLabel} → MIN 2
               </span>
             </div>
           )}
