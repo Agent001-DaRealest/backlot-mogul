@@ -29,6 +29,40 @@ const M_BOX_BL = '\u255A';
 const M_BOX_BR = '\u255D';
 const M_ARROW_R = '\u25BA';
 
+// ─── Program config: defines what "runs" inside the terminal shell ───
+// Each program provides its own boot text, logo, toolbar, and content.
+// When no program prop is passed, Terminal uses SP1000_PROGRAM (backward compatible).
+const SP1000_BOOT_LINES = [
+  { text: 'SOUTH END AI' },
+  { text: 'SP-1000 LEAPS TERMINAL v1.0' },
+  { text: '' },
+  { text: 'LOADING WATCHLIST............. 10 TICKERS' },
+  { text: 'FETCHING MARKET PRICES....... OK' },
+  { text: 'READING 52-WEEK RANGES....... OK' },
+  { text: 'POLLING IMPLIED VOLATILITY... OK' },
+  { text: 'MAPPING EARNINGS CALENDAR.... OK' },
+  { text: '' },
+  { text: 'COMPUTING PRICE PROXIMITY SCORES' },
+  { text: 'APPLYING NEAR-HIGH PENALTY CHECK' },
+  { text: 'EVALUATING EARNINGS PERIOD BONUS' },
+  { text: 'RUNNING CRISIS DETECTOR (7-DAY)' },
+  { text: 'ENFORCING SAFETY FLOOR OVERRIDES' },
+  { text: '' },
+  { text: 'CLASSIFYING TIER 1 / TIER 2 FILTERS' },
+  { text: 'COMPOSITING SIGNAL: GREEN / DIM' },
+  { text: '' },
+  { text: 'LOADING LEGAL DISCLAIMERS' },
+  { text: 'CONFIRMING ALL CALCULATIONS . . . READY' },
+];
+
+const SP1000_PROGRAM = {
+  id: 'sp1000',
+  name: 'SP-1000',
+  logo: '/south-end-ai-logo.png',
+  bootLines: SP1000_BOOT_LINES,
+  // toolbar buttons are defined inline in Terminal since they reference internal state/handlers
+};
+
 function calcGauge(price, w52h, w52l) {
   const range = w52h - w52l;
   if (range <= 0) return { filled: 0, color: '#22aa44', pct: 0.5, isExpensive: false };
@@ -2250,8 +2284,6 @@ function FrontFace({ stocks, today, loading, limitReached, lastSynced, showSyncT
         })}
       </div>
 
-      <CRTOverlay />
-
       {/* Signal explanation overlay */}
       {selectedStock && (
         <SignalExplainOverlay
@@ -2267,10 +2299,10 @@ function FrontFace({ stocks, today, loading, limitReached, lastSynced, showSyncT
 }
 
 // Startup overlay — logo splash + DOS boot sequence + CRT warm-up
-function StartupOverlay({ onComplete, onFadeIn }) {
+function StartupOverlay({ onComplete, onFadeIn, logo: logoProp, bootLines: bootLinesProp }) {
   // -1=unit off (black, instant), 0=white logo (backlight fading in), 2=boot text, 2.5=boot text final frame, 3=warm-up, 4=dismissing
   const [phase, setPhase] = useState(-1);
-  const logo = '/south-end-ai-logo.png';
+  const logo = logoProp || '/south-end-ai-logo.png';
 
   // Phase -1 → 0: Unit off → begin backlight fade immediately
   useEffect(() => {
@@ -2335,28 +2367,7 @@ function StartupOverlay({ onComplete, onFadeIn }) {
     else if (phase === 3 || phase === 4) onComplete();
   };
 
-  const bootLines = [
-    { text: 'SOUTH END AI' },
-    { text: 'SP-1000 LEAPS TERMINAL v1.0' },
-    { text: '' },
-    { text: 'LOADING WATCHLIST............. 10 TICKERS' },
-    { text: 'FETCHING MARKET PRICES....... OK' },
-    { text: 'READING 52-WEEK RANGES....... OK' },
-    { text: 'POLLING IMPLIED VOLATILITY... OK' },
-    { text: 'MAPPING EARNINGS CALENDAR.... OK' },
-    { text: '' },
-    { text: 'COMPUTING PRICE PROXIMITY SCORES' },
-    { text: 'APPLYING NEAR-HIGH PENALTY CHECK' },
-    { text: 'EVALUATING EARNINGS PERIOD BONUS' },
-    { text: 'RUNNING CRISIS DETECTOR (7-DAY)' },
-    { text: 'ENFORCING SAFETY FLOOR OVERRIDES' },
-    { text: '' },
-    { text: 'CLASSIFYING TIER 1 / TIER 2 FILTERS' },
-    { text: 'COMPOSITING SIGNAL: GREEN / DIM' },
-    { text: '' },
-    { text: 'LOADING LEGAL DISCLAIMERS' },
-    { text: 'CONFIRMING ALL CALCULATIONS . . . READY' },
-  ];
+  const bootLines = bootLinesProp || SP1000_BOOT_LINES;
 
   return (
     <div
@@ -2587,11 +2598,11 @@ function StartupOverlay({ onComplete, onFadeIn }) {
 }
 
 // Logo display - title card fade in/out like a video game splash
-function WhiteFlashOverlay({ active, onDismiss }) {
+function WhiteFlashOverlay({ active, onDismiss, logo: logoProp }) {
   const [phase, setPhase] = useState(-1); // -1=hidden, 0=black hold, 1=fade-in, 2=hold, 3=fade-out, 4=crt-death
 
   // Single logo
-  const logo = '/south-end-ai-logo.png';
+  const logo = logoProp || '/south-end-ai-logo.png';
 
   useEffect(() => {
     if (!active) {
@@ -3768,7 +3779,9 @@ function TimeMachineBlueprintOverlay({ stocks, historicalDate, onReturn, onEnter
   );
 }
 
-export default function Terminal({ stocks = [], today, onRefresh, loading, limitReached, onStockChange, timeMachineDate, timeMachineStocks, timeMachineLoading, onTimeMachineActivate, onReturnToPresent, benchmarkReturn, onTimeMachineNavigate, signalDatesIndex }) {
+export default function Terminal({ stocks = [], today, onRefresh, loading, limitReached, onStockChange, timeMachineDate, timeMachineStocks, timeMachineLoading, onTimeMachineActivate, onReturnToPresent, benchmarkReturn, onTimeMachineNavigate, signalDatesIndex, program }) {
+  const prog = program || SP1000_PROGRAM;
+  const isSP1000 = prog.id === 'sp1000';
   const [glitching, setGlitching] = useState(false);
   const [showLogo, setShowLogo] = useState(false);
   const [lastSynced, setLastSynced] = useState(null);
@@ -3971,7 +3984,7 @@ export default function Terminal({ stocks = [], today, onRefresh, loading, limit
   };
 
   const triggerLogo = () => {
-    // SP-1000 is a universal "go to terminal" override
+    // Universal "go to home screen" override for any program
     if (!booted) {
       // Skip startup animation entirely
       setBooted(true);
@@ -3979,17 +3992,21 @@ export default function Terminal({ stocks = [], today, onRefresh, loading, limit
       requestAnimationFrame(() => setBootFade(true));
       return;
     }
-    // Dismiss any active overlay and return to terminal
-    if (showLogo) { setShowLogo(false); return; }
-    if (glitching) { setGlitching(false); setGuideBlurred(false); setContactGag(false); setRestartVisible(false); return; }
-    if (timeMachineInput) { setTimeMachineInput(false); return; }
-    if (timeMachineDate && !wormholeActive) { triggerReturnToPresent(); return; }
-    // Already on main terminal — surge all buttons and relight the screen
-    if (screenRelight) return;
-    setNavSurge(true);
-    setScreenRelight(true);
-    // Clear surge after animation completes
-    setTimeout(() => setNavSurge(false), 650);
+    if (isSP1000) {
+      // SP-1000: dismiss any active overlay and return to home screen
+      if (showLogo) { setShowLogo(false); return; }
+      if (glitching) { setGlitching(false); setGuideBlurred(false); setContactGag(false); setRestartVisible(false); return; }
+      if (timeMachineInput) { setTimeMachineInput(false); return; }
+      if (timeMachineDate && !wormholeActive) { triggerReturnToPresent(); return; }
+      // Already on home screen — surge all buttons and relight the screen
+      if (screenRelight) return;
+      setNavSurge(true);
+      setScreenRelight(true);
+      setTimeout(() => setNavSurge(false), 650);
+    } else {
+      // Other programs: custom click handler (no-op keeps user in the shell)
+      if (prog.onLogoClick) prog.onLogoClick();
+    }
   };
 
   return (
@@ -4437,7 +4454,7 @@ export default function Terminal({ stocks = [], today, onRefresh, loading, limit
               border: '0.5px solid rgba(150,150,150,0.15)',
             }}
           >
-            {/* REFRESH / SYNCING — etched at top edge of screen; only visible on main terminal */}
+            {/* REFRESH / SYNCING — etched at top edge of screen */}
             {onRefresh && booted && !glitching && !timeMachineDate && !timeMachineAnimating && !timeMachineInput && !showLogo && !refreshHidden && (
               <div
                 onClick={() => {
@@ -4469,8 +4486,13 @@ export default function Terminal({ stocks = [], today, onRefresh, loading, limit
               }}
             >
               <div style={{ opacity: bootFade ? 1 : 0, transition: 'opacity 1.4s ease-in' }}>
-                <FrontFace stocks={stocks} today={today} loading={loading} limitReached={limitReached} lastSynced={lastSynced} showSyncTime={showSyncTime} ivEditMode={ivEditMode} onToggleIVEdit={() => setIvEditMode(!ivEditMode)} onStockChange={onStockChange} booted={booted} onSignalOverlayChange={setSignalOverlayOpen} signalCloseRef={signalCloseRef} />
+                {isSP1000 ? (
+                  <FrontFace stocks={stocks} today={today} loading={loading} limitReached={limitReached} lastSynced={lastSynced} showSyncTime={showSyncTime} ivEditMode={ivEditMode} onToggleIVEdit={() => setIvEditMode(!ivEditMode)} onStockChange={onStockChange} booted={booted} onSignalOverlayChange={setSignalOverlayOpen} signalCloseRef={signalCloseRef} />
+                ) : (
+                  prog.content ? prog.content({ booted }) : null
+                )}
               </div>
+              <CRTOverlay />
               {/* Screen relight overlay — dims then relights when SP-1000 tapped on home screen */}
               {screenRelight && (
                 <div
@@ -4495,9 +4517,9 @@ export default function Terminal({ stocks = [], today, onRefresh, loading, limit
                   }}
                 />
               )}
-              {bootChecked && !booted && <StartupOverlay onComplete={handleBootComplete} onFadeIn={handleBootFadeIn} />}
+              {bootChecked && !booted && <StartupOverlay onComplete={handleBootComplete} onFadeIn={handleBootFadeIn} logo={prog.logo} bootLines={prog.bootLines} />}
+              {isSP1000 && <>
               <PixelGlitchOverlay active={glitching} startAtGag={contactGag} stocks={stocks} today={today} onDismiss={() => { setGlitching(false); setGuideBlurred(false); setContactGag(false); setRestartVisible(false); }} onBlurStart={() => setGuideBlurred(true)} onReboot={() => setBooted(false)} />
-              {/* WhiteFlashOverlay removed — logo splash now part of StartupOverlay */}
               {timeMachineInput && (
                 <TimeMachineDateInput
                   onSubmit={handleDateConfirm}
@@ -4557,12 +4579,13 @@ export default function Terminal({ stocks = [], today, onRefresh, loading, limit
                 active={wormholeActive}
                 onComplete={handleWormholeComplete}
               />
+              </>}
             </div>
           </div>
 
           {/* Bottom control strip — biased toward bottom of housing */}
-          {timeMachineDate || timeMachineAnimating || timeMachineInput || (glitching && (!guideBlurred || contactGag)) || returnSliding || returnSlidePop || tmNavigating ? (
-            /* Overlay active: centered RETURN only */
+          {isSP1000 && (timeMachineDate || timeMachineAnimating || timeMachineInput || (glitching && (!guideBlurred || contactGag)) || returnSliding || returnSlidePop || tmNavigating) ? (
+            /* Overlay active: centered RETURN only (SP-1000 only) */
             <div style={{
               display: 'flex',
               justifyContent: 'center',
@@ -4631,7 +4654,7 @@ export default function Terminal({ stocks = [], today, onRefresh, loading, limit
               >
                 {contactGag ? 'RESTART' : 'RETURN'}
               </span>
-              {/* SP-1000 reveals at destination as RETURN arrives */}
+              {/* Program name reveals at destination as RETURN arrives */}
               <span
                 style={{
                   fontFamily: MONO,
@@ -4649,14 +4672,14 @@ export default function Terminal({ stocks = [], today, onRefresh, loading, limit
                   animation: returnSlidePop ? 'sp1000logoBrightnessPop 0.4s ease-out forwards' : 'none',
                 }}
               >
-                SP-1000
+                {prog.name}
               </span>
             </div>
           ) : (
-            /* Normal/startup: CONTACT + GUIDE + TIME MACHINE left, SP-1000 right */
+            /* Normal toolbar: nav buttons (SP-1000 only) + program name */
             <div style={{
               display: 'flex',
-              justifyContent: 'center',
+              justifyContent: isSP1000 ? 'center' : 'flex-end',
               alignItems: 'center',
               marginTop: 'auto',
               padding: '14px 20px 0',
@@ -4665,7 +4688,8 @@ export default function Terminal({ stocks = [], today, onRefresh, loading, limit
               opacity: signalOverlayOpen ? 0.25 : 1,
               transition: 'opacity 0.3s ease',
             }}>
-              {/* Key wrapper — changing navSweepKey remounts buttons, restarting sweep animation */}
+              {isSP1000 && (
+              /* Key wrapper — changing navSweepKey remounts buttons, restarting sweep animation */
               <React.Fragment key={`nav-sweep-${navSweepKey}`}>
               {[
                 { id: 'contact', label: 'CONTACT', noSlide: true, trigger: triggerContact, delay: '0.15s' },
@@ -4736,7 +4760,8 @@ export default function Terminal({ stocks = [], today, onRefresh, loading, limit
                 );
               })}
               </React.Fragment>
-              <span style={{ flex: 1, opacity: navSlideButton ? 0 : 1, transition: navSlideButton ? 'opacity 0.2s ease-out 0.06s' : 'opacity 0.2s ease' }} />
+              )}
+              {isSP1000 && <span style={{ flex: 1, opacity: navSlideButton ? 0 : 1, transition: navSlideButton ? 'opacity 0.2s ease-out 0.06s' : 'opacity 0.2s ease' }} />}
               <span
                 onClick={navSlideButton ? undefined : (signalOverlayOpen && signalCloseRef.current ? signalCloseRef.current : triggerLogo)}
                 style={{
@@ -4761,7 +4786,7 @@ export default function Terminal({ stocks = [], today, onRefresh, loading, limit
                   opacity: navSlideButton ? undefined : (navFlicker ? undefined : 1),
                 }}
               >
-                SP-1000
+                {prog.name}
               </span>
             </div>
           )}

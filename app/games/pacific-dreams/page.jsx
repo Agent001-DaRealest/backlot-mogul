@@ -1,4 +1,4 @@
-import PacificDreamsShell from '../../../components/pacific-dreams/PacificDreamsShell';
+import PacificDreamsTerminal from '../../../components/pacific-dreams/PacificDreamsTerminal';
 
 export const metadata = {
   title: 'Pacific Dreams — Movie Studio Simulator',
@@ -18,5 +18,5 @@ export const metadata = {
 };
 
 export default function PacificDreamsPage() {
-  return <PacificDreamsShell />;
+  return <PacificDreamsTerminal />;
 }

@@ -65,7 +65,7 @@ function getInitialStocks() {
   return DEFAULT_STOCKS;
 }
 
-export default function TerminalContainer() {
+export default function TerminalContainer({ program } = {}) {
   const [stocks, setStocks] = useState(DEFAULT_STOCKS);
   const [today, setToday] = useState(getToday());
   const [loading, setLoading] = useState(false);
@@ -228,6 +228,7 @@ export default function TerminalContainer() {
       benchmarkReturn={benchmarkReturn}
       onTimeMachineNavigate={handleTimeMachineNavigate}
       signalDatesIndex={signalDatesIndex}
+      program={program}
     />
   );
 }
