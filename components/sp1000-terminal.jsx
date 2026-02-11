@@ -4455,7 +4455,7 @@ export default function Terminal({ stocks = [], today, onRefresh, loading, limit
             }}
           >
             {/* REFRESH / SYNCING — etched at top edge of screen */}
-            {onRefresh && booted && !glitching && !timeMachineDate && !timeMachineAnimating && !timeMachineInput && !showLogo && !refreshHidden && (
+            {isSP1000 && onRefresh && booted && !glitching && !timeMachineDate && !timeMachineAnimating && !timeMachineInput && !showLogo && !refreshHidden && (
               <div
                 onClick={() => {
                   if (!loading) onRefresh();
