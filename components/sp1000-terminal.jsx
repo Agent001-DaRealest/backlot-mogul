@@ -3752,7 +3752,7 @@ function TimeMachineBlueprintOverlay({ stocks, historicalDate, onReturn, onEnter
                     {next ? (
                       <span
                         onClick={() => onNavigate(next)}
-                        style={tmNavBtnStyle}
+                        style={{ ...tmNavBtnStyle, marginLeft: 'auto' }}
                       >
                         JUMP FORWARD IN TIME {'\u25B8'}
                       </span>
