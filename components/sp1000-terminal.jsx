@@ -1,6 +1,6 @@
 'use client';
 import React, { useState, useEffect } from 'react';
-import { daysBetween, calcPeriod, detectDrawdownMode, calcSignalData } from '../lib/signal-scoring';
+import { daysBetween, calcPeriod, detectDrawdownMode, calcSignalData, thresholdClass } from '../lib/signal-scoring';
 import { findPrevSignalDate, findNextSignalDate } from '../lib/signal-dates-catalog';
 
 // CRT palette: only green, amber, red + white
@@ -410,22 +410,12 @@ function PeriodWithClick({ periodInfo, stock, today }) {
   );
 }
 
-function SignalLight({ sig, tier = 1 }) {
-  const isGreen = sig.score >= 3;
-  // Yellow if score is 2 (has 2 out of 4 favorable conditions)
-  const isYellow = sig.score === 2;
+function SignalLight({ sig, threshold = 2 }) {
+  const passes = sig.score >= threshold;
 
-  // Tier 2: Only show GREEN signals (conviction plays only)
-  if (tier === 2 && !isGreen) {
+  if (!passes) {
     return <span style={{ display: 'inline-block', width: 8, height: 8 }} />;
   }
-
-  // Tier 1: Show both GREEN and YELLOW
-  if (!isGreen && !isYellow) {
-    return <span style={{ display: 'inline-block', width: 8, height: 8 }} />;
-  }
-
-  const lightColor = isGreen ? '#00ff00' : '#ddaa00';
 
   return (
     <span
@@ -434,10 +424,8 @@ function SignalLight({ sig, tier = 1 }) {
         width: 8,
         height: 8,
         borderRadius: '50%',
-        backgroundColor: lightColor,
-        boxShadow: isGreen
-          ? '0 0 14px rgba(0,255,0,1), 0 0 28px rgba(0,255,0,0.7), 0 0 6px rgba(0,255,0,1)'
-          : '0 0 10px rgba(221,170,0,0.8), 0 0 20px rgba(221,170,0,0.5)',
+        backgroundColor: '#00ff00',
+        boxShadow: '0 0 14px rgba(0,255,0,1), 0 0 28px rgba(0,255,0,0.7), 0 0 6px rgba(0,255,0,1)',
         animation: 'sp1000throb 2s ease-in-out infinite',
       }}
     />
@@ -540,15 +528,15 @@ function NarrativeText({ segments }) {
 }
 
 function SignalExplainOverlay({ stock, sig, periodInfo, drawdown, onClose }) {
-  // Tier 2 stocks only show GREEN signals — demote YELLOW to DIM
-  const isTier2 = stock.tier === 2;
-  const effectiveScore = (isTier2 && sig.score === 2) ? 0 : sig.score;
-  const signalLabel = effectiveScore >= 3 ? 'GREEN' : effectiveScore === 2 ? 'YELLOW' : 'DIM';
+  // V2: Per-ticker threshold — score must meet threshold to PASS (GREEN)
+  const threshold = stock.threshold || 2;
+  const passes = sig.score >= threshold;
+  const signalLabel = passes ? 'GREEN' : 'DIM';
 
-  // Border glow color based on effective signal
-  const borderColor = effectiveScore >= 3 ? COLORS.green : effectiveScore === 2 ? COLORS.amber : 'rgba(255,255,255,0.5)';
-  const glowColor = effectiveScore >= 3 ? 'rgba(51,255,102,0.4)' : effectiveScore === 2 ? 'rgba(255,204,0,0.4)' : 'rgba(255,255,255,0.15)';
-  const signalTextColor = effectiveScore >= 3 ? COLORS.green : effectiveScore === 2 ? COLORS.amber : '#ccc';
+  // Border glow color based on signal
+  const borderColor = passes ? COLORS.green : 'rgba(255,255,255,0.5)';
+  const glowColor = passes ? 'rgba(51,255,102,0.4)' : 'rgba(255,255,255,0.15)';
+  const signalTextColor = passes ? COLORS.green : '#ccc';
 
   const yahooUrl = `https://finance.yahoo.com/quote/${stock.sym}`;
   const gaugeInfo = calcGauge(stock.price, stock.w52h, stock.w52l);
@@ -562,14 +550,14 @@ function SignalExplainOverlay({ stock, sig, periodInfo, drawdown, onClose }) {
 
   // Shared styles
   const rowSep = { height: 1, background: COLORS.dimmer, opacity: 0.4 };
-  const labelStyle = { fontFamily: MONO, fontSize: 11, color: COLORS.dim, letterSpacing: 1, fontWeight: 600, textTransform: 'uppercase' };
-  const scoreStyle = (val) => ({ fontFamily: MONO, fontSize: 14, color: val >= 0 ? COLORS.green : COLORS.red, fontWeight: 700 });
-  const reasonStyle = { fontFamily: MONO, fontSize: 11, color: COLORS.dim, lineHeight: 1.5, marginTop: 4 };
+  const labelStyle = { fontFamily: MONO, fontSize: 10, color: COLORS.dim, letterSpacing: 1, fontWeight: 600, textTransform: 'uppercase' };
+  const scoreStyle = (val) => ({ fontFamily: MONO, fontSize: 12, color: val >= 0 ? COLORS.green : COLORS.red, fontWeight: 700 });
+  const reasonStyle = { fontFamily: MONO, fontSize: 10, color: COLORS.dim, lineHeight: 1.4, marginTop: 3 };
 
   return (
     <div
       style={{
-        position: 'fixed',
+        position: 'absolute',
         top: 0,
         left: 0,
         right: 0,
@@ -579,21 +567,22 @@ function SignalExplainOverlay({ stock, sig, periodInfo, drawdown, onClose }) {
         alignItems: 'center',
         justifyContent: 'center',
         zIndex: 2000,
+        borderRadius: 6,
       }}
       onClick={onClose}
     >
       <div
         style={{
-          width: '85%',
-          maxWidth: 580,
-          maxHeight: '85vh',
+          width: '92%',
+          maxWidth: 480,
+          maxHeight: '94%',
           overflowY: 'auto',
           backgroundColor: COLORS.screen,
           borderRadius: 6,
           border: `1.5px solid ${borderColor}`,
           boxShadow: `0 0 20px ${glowColor}, 0 0 60px ${glowColor}, inset 0 0 30px rgba(0,0,0,0.3)`,
           animation: 'sp1000overlayOpen 0.2s ease-out',
-          padding: '24px 28px',
+          padding: '16px 20px',
         }}
       >
         {/* Header */}
@@ -601,25 +590,25 @@ function SignalExplainOverlay({ stock, sig, periodInfo, drawdown, onClose }) {
           display: 'flex',
           justifyContent: 'space-between',
           alignItems: 'center',
-          paddingBottom: 16,
+          paddingBottom: 10,
           borderBottom: `1px solid ${borderColor}`,
-          marginBottom: 16,
+          marginBottom: 10,
         }}>
-          <span style={{ fontSize: 18, color: '#fff', fontFamily: MONO, fontWeight: 600, letterSpacing: 2 }}>
-            {stock.sym} <span style={{ fontWeight: 400, color: COLORS.dim, fontSize: 13 }}>— SIGNAL ANALYSIS</span>
+          <span style={{ fontSize: 15, color: '#fff', fontFamily: MONO, fontWeight: 600, letterSpacing: 2 }}>
+            {stock.sym} <span style={{ fontWeight: 400, color: COLORS.dim, fontSize: 11 }}>— SIGNAL ANALYSIS</span>
           </span>
-          <span style={{ fontSize: 14, color: signalTextColor, fontFamily: MONO, fontWeight: 600, letterSpacing: 2 }}>
+          <span style={{ fontSize: 12, color: signalTextColor, fontFamily: MONO, fontWeight: 600, letterSpacing: 2 }}>
             {signalLabel}
           </span>
         </div>
 
         {/* ── PRICE SCORE ── */}
-        <div style={{ padding: '12px 0' }}>
+        <div style={{ padding: '8px 0' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
             <span style={labelStyle}>PRICE SCORE</span>
             <span style={scoreStyle(sig.priceScore)}>{sig.priceScore >= 0 ? '+' : ''}{sig.priceScore}</span>
           </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginTop: 8 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginTop: 6 }}>
             <GaugeVertical
               filled={gaugeInfo.filled}
               color={gaugeInfo.color}
@@ -628,7 +617,7 @@ function SignalExplainOverlay({ stock, sig, periodInfo, drawdown, onClose }) {
               price={stock.price}
               w52l={stock.w52l}
             />
-            <span style={{ fontFamily: MONO, fontSize: 11, color: COLORS.dim }}>
+            <span style={{ fontFamily: MONO, fontSize: 10, color: COLORS.dim }}>
               <span style={{ color: '#fff' }}>${stock.price.toFixed(2)}</span>
               {' · 52W LOW '}
               <span style={{ color: COLORS.red }}>${stock.w52l.toFixed(2)}</span>
@@ -641,12 +630,12 @@ function SignalExplainOverlay({ stock, sig, periodInfo, drawdown, onClose }) {
         <div style={rowSep} />
 
         {/* ── HIGH PENALTY ── */}
-        <div style={{ padding: '12px 0' }}>
+        <div style={{ padding: '8px 0' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
             <span style={labelStyle}>HIGH PENALTY</span>
             <span style={scoreStyle(sig.nearHighPenalty)}>{sig.nearHighPenalty >= 0 ? '+' : ''}{sig.nearHighPenalty}</span>
           </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginTop: 8 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginTop: 6 }}>
             <GaugeVertical
               filled={gaugeInfo.filled}
               color={gaugeInfo.color}
@@ -655,20 +644,20 @@ function SignalExplainOverlay({ stock, sig, periodInfo, drawdown, onClose }) {
               price={stock.price}
               w52l={stock.w52l}
             />
-            <span style={{ fontFamily: MONO, fontSize: 11, color: COLORS.dim }}>
+            <span style={{ fontFamily: MONO, fontSize: 10, color: COLORS.dim }}>
               <span style={{ color: '#fff' }}>${stock.price.toFixed(2)}</span>
               {' · 52W HIGH '}
               <span style={{ color: COLORS.green }}>${stock.w52h.toFixed(2)}</span>
             </span>
           </div>
           <div style={reasonStyle}>
-            Trading <span style={{ color: sig.pctBelowHigh >= 20 ? COLORS.green : COLORS.red }}>{sig.pctBelowHigh.toFixed(0)}%</span> below 52-week high{sig.nearHighPenalty < 0 ? ' — near-high penalty' : ''}
+            Trading <span style={{ color: sig.pctBelowHigh >= 20 ? COLORS.green : COLORS.red }}>{sig.pctBelowHigh.toFixed(0)}%</span> below 52-week high{sig.isCrisis ? ' — waived (CRISIS)' : sig.nearHighPenalty < 0 ? ' — near-high penalty' : ''}
           </div>
         </div>
         <div style={rowSep} />
 
         {/* ── CRISIS BONUS ── */}
-        <div style={{ padding: '12px 0', position: 'relative', overflow: 'hidden' }}>
+        <div style={{ padding: '8px 0', position: 'relative', overflow: 'hidden' }}>
           {sig.isCrisis && (
             <div style={{
               position: 'absolute', top: 0, bottom: 0, left: -28, right: -28,
@@ -703,7 +692,7 @@ function SignalExplainOverlay({ stock, sig, periodInfo, drawdown, onClose }) {
         <div style={rowSep} />
 
         {/* ── PERIOD ── */}
-        <div style={{ padding: '12px 0' }}>
+        <div style={{ padding: '8px 0' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
             <span style={labelStyle}>PERIOD</span>
             <span style={scoreStyle(sig.periodBonus)}>{sig.periodBonus >= 0 ? '+' : ''}{sig.periodBonus}</span>
@@ -726,29 +715,32 @@ function SignalExplainOverlay({ stock, sig, periodInfo, drawdown, onClose }) {
         {/* ── TOTAL ── */}
         <div style={{
           borderTop: `2px solid ${borderColor}`,
-          paddingTop: 16,
+          paddingTop: 10,
           marginTop: 4,
         }}>
-          <div style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'baseline', gap: 8, marginBottom: 6 }}>
-            <span style={{ fontFamily: MONO, fontSize: 11, color: COLORS.dim, letterSpacing: 1 }}>TOTAL =</span>
-            <span style={{ fontFamily: MONO, fontSize: 20, color: sig.score >= 0 ? COLORS.green : COLORS.red, fontWeight: 700 }}>{sig.score}</span>
+          <div style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'baseline', gap: 8, marginBottom: 4 }}>
+            <span style={{ fontFamily: MONO, fontSize: 10, color: COLORS.dim, letterSpacing: 1 }}>TOTAL =</span>
+            <span style={{ fontFamily: MONO, fontSize: 16, color: sig.score >= 0 ? COLORS.green : COLORS.red, fontWeight: 700 }}>{sig.score}</span>
           </div>
           {floorApplied && (
-            <div style={{ textAlign: 'right', marginBottom: 6 }}>
-              <span style={{ fontFamily: MONO, fontSize: 10, color: COLORS.amber, letterSpacing: 1 }}>
+            <div style={{ textAlign: 'right', marginBottom: 4 }}>
+              <span style={{ fontFamily: MONO, fontSize: 9, color: COLORS.amber, letterSpacing: 1 }}>
                 FLOOR: {floorLabel} → MIN 2
               </span>
             </div>
           )}
+          <div style={{ textAlign: 'right', marginBottom: 4 }}>
+            <span style={{ fontFamily: MONO, fontSize: 9, color: COLORS.dim, letterSpacing: 1 }}>
+              {thresholdClass(threshold)}: score {'≥'} {threshold} → GREEN
+            </span>
+          </div>
           <div style={{ textAlign: 'right' }}>
-            <span style={{ fontFamily: MONO, fontSize: 11, color: COLORS.dim, marginRight: 8 }}>SIGNAL:</span>
+            <span style={{ fontFamily: MONO, fontSize: 10, color: COLORS.dim, marginRight: 8 }}>SIGNAL:</span>
             <span style={{
-              fontFamily: MONO, fontSize: 13, color: signalTextColor, fontWeight: 700, letterSpacing: 2,
-              textShadow: effectiveScore >= 3
+              fontFamily: MONO, fontSize: 11, color: signalTextColor, fontWeight: 700, letterSpacing: 2,
+              textShadow: passes
                 ? '0 0 8px rgba(51,255,102,0.6), 0 0 16px rgba(51,255,102,0.3)'
-                : effectiveScore === 2
-                  ? '0 0 8px rgba(255,204,0,0.6), 0 0 16px rgba(255,204,0,0.3)'
-                  : 'none',
+                : 'none',
             }}>
               {signalLabel}
             </span>
@@ -758,9 +750,9 @@ function SignalExplainOverlay({ stock, sig, periodInfo, drawdown, onClose }) {
         {/* ── Footer: verify + dismiss ── */}
         <div style={{
           borderTop: `1px solid ${COLORS.dimmer}`,
-          marginTop: 16,
-          paddingTop: 14,
-          paddingBottom: 4,
+          marginTop: 10,
+          paddingTop: 10,
+          paddingBottom: 2,
           display: 'flex',
           justifyContent: 'space-between',
           alignItems: 'center',
@@ -769,7 +761,7 @@ function SignalExplainOverlay({ stock, sig, periodInfo, drawdown, onClose }) {
             href={yahooUrl}
             target="_blank"
             rel="noopener noreferrer"
-            style={{ fontFamily: MONO, fontSize: 10, color: COLORS.dim, textDecoration: 'underline', opacity: 0.7 }}
+            style={{ fontFamily: MONO, fontSize: 9, color: COLORS.dim, textDecoration: 'underline', opacity: 0.7 }}
             onClick={e => e.stopPropagation()}
           >
             Verify: Yahoo Finance ↗
@@ -778,17 +770,17 @@ function SignalExplainOverlay({ stock, sig, periodInfo, drawdown, onClose }) {
             onClick={onClose}
             style={{
               fontFamily: MONO,
-              fontSize: 11,
+              fontSize: 10,
               letterSpacing: 3,
-              color: '#fff',
+              color: COLORS.amber,
               backgroundColor: 'transparent',
-              border: '1px solid rgba(255,255,255,0.5)',
-              padding: '6px 24px',
+              border: `1px solid ${COLORS.amber}88`,
+              padding: '5px 18px',
               borderRadius: 4,
               cursor: 'pointer',
               textTransform: 'uppercase',
               fontWeight: 500,
-              textShadow: '0 0 6px rgba(255,255,255,0.3)',
+              textShadow: '0 0 6px rgba(255,170,0,0.4)',
             }}
           >
             DISMISS
@@ -1106,8 +1098,8 @@ function PixelGlitchOverlay({ active, startAtGag, stocks: guideStocks, today: gu
       const gaugeInfo = calcGauge(stock.price, stock.w52h, stock.w52l);
       const drawdown = detectDrawdownMode(stock);
       const sig = calcSignalData(stock.price, stock.w52h, stock.w52l, stock.iv, periodInfo.period, drawdown.mode);
-      const isTier2 = stock.tier === 2;
-      const visible = isTier2 ? sig.score >= 3 : sig.score >= 2;
+      const threshold = stock.threshold || 2;
+      const visible = sig.score >= threshold;
       const daysToEarn = daysBetween(guideToday, stock.nextEarn);
       return { stock, periodInfo, gaugeInfo, drawdown, sig, visible, daysToEarn };
     });
@@ -1123,7 +1115,7 @@ function PixelGlitchOverlay({ active, startAtGag, stocks: guideStocks, today: gu
 
   // Static fallback when no live data available
   const FALLBACK_EXAMPLE = {
-    stock: { sym: 'PEGA', price: 38.53, w52h: 68.10, w52l: 29.84, iv: 70, tier: 1 },
+    stock: { sym: 'PEGA', price: 38.53, w52h: 68.10, w52l: 29.84, iv: 70, threshold: 2 },
     periodInfo: { period: 'QUIET', left: 6, color: COLORS.red },
     gaugeInfo: calcGauge(38.53, 68.10, 29.84),
     sig: { score: 2, pctAboveLow: 29.1 },
@@ -1193,33 +1185,33 @@ function PixelGlitchOverlay({ active, startAtGag, stocks: guideStocks, today: gu
 
         {/* ═══ OVERVIEW ═══ */}
         <div style={{ ...prose, marginBottom: 10, fontSize: guideIsMobile ? 10 : 12, lineHeight: 1.6 }}>
-          The <span style={{ color: COLORS.green, textShadow: '0 0 4px rgba(51,255,102,0.2)' }}>SP-1000 LEAPS TERMINAL</span> monitors a curated watchlist for potential opportunities. A composite signal score evaluates each position across price proximity, earnings period, and drawdown detection. When conditions align, the terminal issues a <span style={{ color: COLORS.green }}>GREEN</span> or <span style={{ color: COLORS.amber }}>YELLOW</span> signal. Signal frequency is intentionally low. Tap any ticker for a scoring breakdown.
+          The <span style={{ color: COLORS.green, textShadow: '0 0 4px rgba(51,255,102,0.2)' }}>SP-1000 LEAPS TERMINAL</span> monitors a curated watchlist for potential opportunities. A composite signal score evaluates each position across price proximity, earnings period, and drawdown detection. When conditions align, the terminal issues a <span style={{ color: COLORS.green }}>GREEN</span> signal. Signal frequency is intentionally low. Tap any ticker for a scoring breakdown.
         </div>
-        <div style={{ ...prose, marginBottom: 10, color: '#dd8844', fontSize: guideIsMobile ? 8 : 10, lineHeight: 1.4 }}>
-          NOT INVESTMENT ADVICE. NOT FOR PUBLIC USE. CONSULT YOUR FINANCIAL ADVISOR.
+        <div style={{ ...prose, marginBottom: 10, color: '#dd8844', fontSize: guideIsMobile ? 10 : 12, lineHeight: 1.6 }}>
+          NOT INVESTMENT ADVICE. CONSULT YOUR FINANCIAL ADVISOR.
         </div>
 
         {/* ═══ READ THE DISPLAY ═══ */}
         <div style={{ ...sectionHeader, marginTop: 8 }}>READ THE DISPLAY</div>
         <div style={{ ...sectionBox }}>
 
-          {/* ── SIGNAL + IV side by side on desktop, stacked on mobile ── */}
+          {/* ── Two-column layout: SIGNAL+IV | 52W GAUGE+CRISIS ── */}
           <div style={{ display: 'flex', flexDirection: guideIsMobile ? 'column' : 'row', gap: 8 }}>
+            {/* ── LEFT COLUMN: SIGNAL + IV GAUGE ── */}
+            <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 8 }}>
             {/* ── SIGNAL LEGEND ── */}
             <div style={{
               border: `1px solid ${COLORS.dimmer}`,
               borderRadius: 4,
               padding: guideIsMobile ? '6px 8px' : '6px 10px',
               background: 'rgba(255,255,255,0.015)',
-              flex: 1,
             }}>
-              <div style={{ fontFamily: MONO, fontSize: F, color: COLORS.amber, marginBottom: 4, fontWeight: 'bold' }}>
+              <div style={{ fontFamily: MONO, fontSize: F, color: '#ffffff', marginBottom: 4, fontWeight: 'bold' }}>
                 SIGNAL
               </div>
               {[
-                { color: '#00ff00', glow: '0 0 10px rgba(0,255,0,0.9), 0 0 20px rgba(0,255,0,0.5)', label: 'GREEN', desc: 'Score 3+. Row sweeps green.', pulse: true },
-                { color: '#ddaa00', glow: '0 0 8px rgba(221,170,0,0.7), 0 0 16px rgba(221,170,0,0.4)', label: 'YELLOW', desc: 'Score 2. Tier 1 only.', pulse: true },
-                { color: COLORS.dimmer, glow: 'none', label: 'DIM', desc: 'Score 0\u20131. LED off.', pulse: false },
+                { color: '#00ff00', glow: '0 0 10px rgba(0,255,0,0.9), 0 0 20px rgba(0,255,0,0.5)', label: 'GREEN', desc: 'Score \u2265 threshold. Row sweeps green.', pulse: true },
+                { color: COLORS.dimmer, glow: 'none', label: 'DIM', desc: 'Below threshold. LED off.', pulse: false },
               ].map((sig, i) => (
                 <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '3px 2px' }}>
                   <span style={{
@@ -1229,7 +1221,7 @@ function PixelGlitchOverlay({ active, startAtGag, stocks: guideStocks, today: gu
                   }} />
                   <div style={{ minWidth: 0 }}>
                     <span style={{ fontFamily: MONO, fontSize: F - 1, color: sig.color, fontWeight: 'bold', letterSpacing: 1 }}>{sig.label}</span>
-                    <span style={{ fontFamily: MONO, fontSize: F - 2, color: GUIDE_TEXT, marginLeft: 6 }}>{sig.desc}</span>
+                    <span style={{ fontFamily: MONO, fontSize: F - 1, color: GUIDE_TEXT, marginLeft: 6 }}>{sig.desc}</span>
                   </div>
                 </div>
               ))}
@@ -1244,9 +1236,8 @@ function PixelGlitchOverlay({ active, startAtGag, stocks: guideStocks, today: gu
               borderRadius: 4,
               padding: guideIsMobile ? '6px 8px' : '6px 10px',
               background: 'rgba(255,255,255,0.015)',
-              flex: 1,
             }}>
-              <div style={{ fontFamily: MONO, fontSize: F, color: COLORS.amber, marginBottom: 4, fontWeight: 'bold' }}>
+              <div style={{ fontFamily: MONO, fontSize: F, color: '#ffffff', marginBottom: 4, fontWeight: 'bold' }}>
                 IV GAUGE
               </div>
               <div style={{ fontFamily: MONO, fontSize: F - 2, color: GUIDE_TEXT, lineHeight: 1.5, marginBottom: 4 }}>
@@ -1274,8 +1265,10 @@ function PixelGlitchOverlay({ active, startAtGag, stocks: guideStocks, today: gu
                 Higher IV = higher option premiums.
               </div>
             </div>
-          </div>
+            </div>
 
+            {/* ── RIGHT COLUMN: 52W GAUGE + CRISIS MODE ── */}
+            <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 8 }}>
           {/* ── 52W GAUGE SPECTRUM ── */}
           {(() => {
             const ex = example;
@@ -1288,9 +1281,8 @@ function PixelGlitchOverlay({ active, startAtGag, stocks: guideStocks, today: gu
                 borderRadius: 4,
                 padding: guideIsMobile ? '6px 8px' : '6px 10px',
                 background: 'rgba(255,255,255,0.015)',
-                marginTop: 8,
               }}>
-                <div style={{ fontFamily: MONO, fontSize: F, color: COLORS.amber, marginBottom: 4, fontWeight: 'bold' }}>
+                <div style={{ fontFamily: MONO, fontSize: F, color: '#ffffff', marginBottom: 4, fontWeight: 'bold' }}>
                   52W GAUGE
                 </div>
 
@@ -1357,28 +1349,26 @@ function PixelGlitchOverlay({ active, startAtGag, stocks: guideStocks, today: gu
                   Tap gauge for exact %. Tap price for 52W low.
                 </div>
 
-                {/* ── CRISIS MODE — sub-section within 52W Gauge box ── */}
-                <div style={{ height: 1, background: COLORS.dimmer, margin: '8px 0', opacity: 0.5 }} />
-                <div style={{ position: 'relative', overflow: 'hidden' }}>
-                  {/* Crisis throb overlay */}
-                  <div style={{
-                    position: 'absolute', top: 0, bottom: 0, left: 0, right: 0,
-                    background: 'linear-gradient(90deg, rgba(255,204,0,0.08) 0%, rgba(255,180,0,0.15) 30%, rgba(255,204,0,0.08) 70%, transparent 100%)',
-                    animation: 'sp1000crisisThrob 3s ease-in-out infinite',
-                    pointerEvents: 'none',
-                  }} />
-                  <div style={{ position: 'relative', zIndex: 1 }}>
-                    <div style={{ fontFamily: MONO, fontSize: F, color: COLORS.amber, letterSpacing: 2, fontWeight: 'bold' }}>
-                      CRISIS MODE
-                    </div>
-                    <div style={{ fontFamily: MONO, fontSize: F - 2, color: GUIDE_TEXT, marginTop: 2, lineHeight: 1.4 }}>
-                      {'>'}8% drop in 7 trading days.
-                    </div>
-                  </div>
-                </div>
               </div>
             );
           })()}
+
+          {/* ── CRISIS MODE — own box ── */}
+          <div style={{
+            border: `1px solid ${COLORS.dimmer}`,
+            borderRadius: 4,
+            padding: guideIsMobile ? '6px 8px' : '6px 10px',
+            background: 'rgba(255,255,255,0.015)',
+          }}>
+            <div style={{ fontFamily: MONO, fontSize: F, color: '#ffffff', letterSpacing: 2, fontWeight: 'bold' }}>
+              CRISIS MODE
+            </div>
+            <div style={{ fontFamily: MONO, fontSize: F - 2, color: GUIDE_TEXT, marginTop: 2, lineHeight: 1.4 }}>
+              {'>'}8% drop in 7 trading days.
+            </div>
+          </div>
+            </div>
+          </div>
         </div>
 
         {/* ═══ TABLE OF CONTENTS ═══ */}
@@ -1392,10 +1382,9 @@ function PixelGlitchOverlay({ active, startAtGag, stocks: guideStocks, today: gu
           {[
             ['1', 'CONTROLS'],
             ['2', 'SCORING ENGINE'],
-            ['3', 'CLASSIFICATION'],
-            ['4', 'TEMPORAL NAVIGATION'],
-            ['5', 'SIGNAL REPLICATION SPECIFICATION'],
-            ['6', 'AI ANALYSIS PROMPT'],
+            ['3', 'TEMPORAL NAVIGATION'],
+            ['4', 'SIGNAL REPLICATION SPECIFICATION'],
+            ['5', 'AI ANALYSIS PROMPT'],
           ].map(([num, title]) => (
             <div key={num} style={{
               fontFamily: MONO, fontSize: F - 2, color: GUIDE_TEXT, lineHeight: 2.0,
@@ -1450,90 +1439,107 @@ function PixelGlitchOverlay({ active, startAtGag, stocks: guideStocks, today: gu
           </div>
         </div></div>
 
-        {/* ═══ TWO-COLUMN LAYOUT: SCORING + RIGHT COLUMN ═══ */}
-        <div style={{ display: 'flex', gap: 12 }}>
-          {/* LEFT COLUMN */}
-          <div style={{ flex: 1.1, minWidth: 0 }}>
-            {/* ═══ SCORING ENGINE ═══ */}
-            <div style={{ ...sectionHeader }}>SCORING ENGINE</div>
-            <div style={{ ...sectionBox }}>
-            <div style={{ marginBottom: 8 }}>
-              <div style={{ display: 'flex', padding: '3px 8px', background: 'rgba(255,255,255,0.02)' }}>
-                <span style={{ ...tbl, flex: 2, color: COLORS.blue, letterSpacing: 2 }}>COMPONENT</span>
-                <span style={{ ...tbl, flex: 3, color: COLORS.blue, letterSpacing: 2 }}>CONDITION</span>
-                <span style={{ ...tbl, flex: 0.7, color: COLORS.blue, letterSpacing: 2, textAlign: 'right' }}>PTS</span>
+        {/* ═══ SCORING ENGINE — receipt-style vertical math ═══ */}
+        <div style={{ ...sectionHeader }}>SCORING ENGINE</div>
+        <div style={{ ...sectionBox }}>
+          {(() => {
+            const gLabelStyle = { fontFamily: MONO, fontSize: Fs, color: COLORS.dim, letterSpacing: 1, fontWeight: 600, textTransform: 'uppercase' };
+            const gScoreStyle = (val) => ({ fontFamily: MONO, fontSize: F, color: val > 0 ? COLORS.green : val < 0 ? COLORS.red : GUIDE_MUTED, fontWeight: 700 });
+            const gReasonStyle = { fontFamily: MONO, fontSize: Fs - 1, color: GUIDE_MUTED, lineHeight: 1.5, marginTop: 2 };
+            const gRowSep = { height: 1, background: COLORS.dimmer, opacity: 0.4, margin: '6px 0' };
+
+            return (<>
+            {/* ── PRICE SCORE ── */}
+            <div style={{ padding: '4px 0' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
+                <span style={gLabelStyle}>PRICE SCORE</span>
+                <span style={{ fontFamily: MONO, fontSize: Fs, color: GUIDE_MUTED }}>0–2</span>
               </div>
-              {[
-                ['PRICE', '\u226410% above 52W low', '+3', valGreen],
-                ['', '\u226420% above 52W low', '+2', valGreen],
-                ['', '\u226450% above 52W low', '+1', valGreen],
-                ['', 'Above 50%', '+0', valDim],
-              ].map((row, i) => (
-                <div key={`price-${i}`} style={{ display: 'flex', padding: '2px 8px', alignItems: 'center' }}>
-                  <span style={{ ...tbl, flex: 2, color: GUIDE_LABEL, letterSpacing: 1 }}>{row[0]}</span>
-                  <span style={{ ...tbl, flex: 3, color: GUIDE_TEXT }}>{row[1]}</span>
-                  <span style={{ ...tbl, flex: 0.7, textAlign: 'right', ...row[3] }}>{row[2]}</span>
-                </div>
-              ))}
-              <div style={{ display: 'flex', padding: '2px 8px', alignItems: 'center' }}>
-                <span style={{ ...tbl, flex: 2, color: GUIDE_LABEL, letterSpacing: 1 }}>NEAR-HIGH</span>
-                <span style={{ ...tbl, flex: 3, color: GUIDE_TEXT }}>&lt;20% below 52W high</span>
-                <span style={{ ...tbl, flex: 0.7, textAlign: 'right', color: COLORS.red }}>{'\u2212'}1</span>
+              <div style={gReasonStyle}>
+                {'\u226410% above 52W low → <span style={valGreen}>+1</span>'}
               </div>
-              {[
-                ['PERIOD', 'QUIET (pre-earn)', '+1', COLORS.green],
-                ['', 'CRUSH (post-earn)', '0', GUIDE_MUTED],
-                ['', 'OPEN (repurchase)', '\u22121', COLORS.red],
-              ].map((row, i) => (
-                <div key={`period-${i}`} style={{ display: 'flex', padding: '2px 8px', alignItems: 'center' }}>
-                  <span style={{ ...tbl, flex: 2, color: GUIDE_LABEL, letterSpacing: 1 }}>{row[0]}</span>
-                  <span style={{ ...tbl, flex: 3, color: GUIDE_TEXT }}>{row[1]}</span>
-                  <span style={{ ...tbl, flex: 0.7, textAlign: 'right', color: row[3] }}>{row[2]}</span>
-                </div>
-              ))}
-              <div style={{ display: 'flex', padding: '2px 8px', alignItems: 'center' }}>
-                <span style={{ ...tbl, flex: 2, color: GUIDE_LABEL, letterSpacing: 1 }}>CRISIS</span>
-                <span style={{ ...tbl, flex: 3, color: GUIDE_TEXT }}>&gt;8% drop in 7 trading days</span>
-                <span style={{ ...tbl, flex: 0.7, textAlign: 'right', color: COLORS.green }}>+2</span>
+              <div style={{ ...gReasonStyle, marginTop: 0 }}>
+                10–20% <span style={{ color: COLORS.green }}>(sweet spot)</span> → <span style={valGreen}>+2</span>
+              </div>
+              <div style={{ ...gReasonStyle, marginTop: 0 }}>
+                20–50% → <span style={valGreen}>+1</span> &nbsp; {'>'}50% → <span style={valDim}>0</span>
+              </div>
+            </div>
+            <div style={gRowSep} />
+
+            {/* ── NEAR-HIGH PENALTY ── */}
+            <div style={{ padding: '4px 0' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
+                <span style={gLabelStyle}>NEAR-HIGH PENALTY</span>
+                <span style={{ fontFamily: MONO, fontSize: Fs, color: GUIDE_MUTED }}>0 or −1</span>
+              </div>
+              <div style={gReasonStyle}>
+                {'<'}20% below 52W high → <span style={{ color: COLORS.red }}>{'\u2212'}1</span>
+              </div>
+              <div style={{ ...gReasonStyle, marginTop: 0 }}>
+                <span style={{ color: COLORS.amber }}>Waived during CRISIS</span>
+              </div>
+            </div>
+            <div style={gRowSep} />
+
+            {/* ── CRISIS BONUS ── */}
+            <div style={{ padding: '4px 0' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
+                <span style={gLabelStyle}>CRISIS BONUS</span>
+                <span style={{ fontFamily: MONO, fontSize: Fs, color: GUIDE_MUTED }}>0 or +2</span>
+              </div>
+              <div style={gReasonStyle}>
+                {'>'}8% drop in 7 trading days → <span style={{ color: COLORS.green }}>+2</span>
+              </div>
+            </div>
+            <div style={gRowSep} />
+
+            {/* ── PERIOD ── */}
+            <div style={{ padding: '4px 0' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
+                <span style={gLabelStyle}>PERIOD</span>
+                <span style={{ fontFamily: MONO, fontSize: Fs, color: GUIDE_MUTED }}>−1 to +1</span>
+              </div>
+              <div style={gReasonStyle}>
+                <span style={{ color: COLORS.red }}>QUIET</span> (pre-earnings) → <span style={{ color: COLORS.green }}>+1</span>
+              </div>
+              <div style={{ ...gReasonStyle, marginTop: 0 }}>
+                <span style={{ color: COLORS.blue }}>CRUSH</span> (post-earnings) → <span style={{ color: GUIDE_MUTED }}>0</span>
+              </div>
+              <div style={{ ...gReasonStyle, marginTop: 0 }}>
+                <span style={{ color: COLORS.green }}>OPEN</span> (repurchase) → <span style={{ color: COLORS.red }}>{'\u2212'}1</span>
               </div>
             </div>
 
-            {/* SCORE → SIGNAL MAPPING */}
-            <div style={{ marginBottom: 8 }}>
-              <div style={{ padding: '3px 8px', background: 'rgba(255,255,255,0.02)' }}>
-                <span style={{ ...tbl, color: COLORS.blue, letterSpacing: 2 }}>SCORE {'\u2192'} SIGNAL</span>
+            {/* ── TOTAL ── */}
+            <div style={{ borderTop: `2px solid ${COLORS.dimmer}`, paddingTop: 8, marginTop: 6 }}>
+              <div style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'baseline', gap: 8, marginBottom: 4 }}>
+                <span style={{ fontFamily: MONO, fontSize: Fs, color: COLORS.dim, letterSpacing: 1 }}>TOTAL =</span>
+                <span style={{ fontFamily: MONO, fontSize: F + 4, color: COLORS.green, fontWeight: 700 }}>SCORE</span>
               </div>
-              <div style={{ display: 'flex', padding: '2px 8px', alignItems: 'center', justifyContent: 'space-between' }}>
-                <span style={tbl}><span style={valGreen}>{BLOCK}{BLOCK}{BLOCK}</span> <span style={{ color: GUIDE_TEXT }}>GREEN</span></span>
-                <span style={{ ...tbl, color: GUIDE_TEXT }}>{'\u2265'} 3</span>
-              </div>
-              <div style={{ display: 'flex', padding: '2px 8px', alignItems: 'center', justifyContent: 'space-between' }}>
-                <span style={tbl}><span style={valAmber}>{HALF}{HALF}{HALF}</span> <span style={{ color: GUIDE_TEXT }}>YELLOW</span></span>
-                <span style={{ ...tbl, color: GUIDE_TEXT }}>= 2</span>
-              </div>
-              <div style={{ display: 'flex', padding: '2px 8px', alignItems: 'center', justifyContent: 'space-between' }}>
-                <span style={tbl}><span style={valDim}>{DOT}{DOT}{DOT}</span> <span style={{ color: GUIDE_TEXT }}>DIM</span></span>
-                <span style={{ ...tbl, color: GUIDE_MUTED }}>{'\u2264'} 1</span>
+              <div style={{ textAlign: 'right', marginBottom: 4 }}>
+                <span style={{ fontFamily: MONO, fontSize: Fs - 1, color: COLORS.amber, letterSpacing: 1 }}>
+                  FLOOR: if near 52W low or CRISIS → min 2
+                </span>
               </div>
             </div>
-          </div></div>
 
-          {/* RIGHT COLUMN */}
-          <div style={{ flex: 1, minWidth: 0 }}>
-            {/* ═══ CLASSIFICATION ═══ */}
-            <div style={{ ...sectionHeader }}>CLASSIFICATION</div>
-            <div style={{ ...sectionBox }}>
-            <div style={{ ...proseSm, lineHeight: 1.9, marginBottom: 8 }}>
-              Every stock in the watchlist is classified as either <span style={{ color: COLORS.green }}>GREEN</span> + <span style={{ color: COLORS.amber }}>YELLOW</span> or <span style={{ color: COLORS.green }}>GREEN ONLY</span> based on backtested forward returns.
+            {/* ── SIGNAL ── */}
+            <div style={{ borderTop: `1px solid ${COLORS.dimmer}`, paddingTop: 8, marginTop: 4 }}>
+              <div style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'baseline', gap: 8 }}>
+                <span style={{ fontFamily: MONO, fontSize: Fs, color: COLORS.dim, letterSpacing: 1 }}>SIGNAL:</span>
+                <span style={{ fontFamily: MONO, fontSize: F, color: COLORS.green, fontWeight: 700, letterSpacing: 2 }}>
+                  score {'\u2265'} CLASS → GREEN
+                </span>
+              </div>
+              <div style={{ textAlign: 'right', marginTop: 2 }}>
+                <span style={{ fontFamily: MONO, fontSize: Fs - 1, color: GUIDE_MUTED }}>
+                  THRESHOLD-5: AMZN, CMCSA &nbsp; THRESHOLD-3: AAPL, DIS, MSFT &nbsp; THRESHOLD-2: all others
+                </span>
+              </div>
             </div>
-            <div style={{ ...proseSm, lineHeight: 1.9, marginBottom: 8 }}>
-              A <span style={{ color: COLORS.amber }}>YELLOW</span> reading on a <span style={{ color: COLORS.green }}>GREEN-only</span> stock displays as <span style={{ color: GUIDE_MUTED }}>DIM</span> — the terminal shows only actionable signals.
-            </div>
-            <div style={{ ...proseSm, lineHeight: 1.9, marginBottom: 0 }}>
-              Classifications are reviewed as new performance data becomes available.
-            </div>
-            </div>
-          </div>
+            </>);
+          })()}
         </div>
 
         {/* ═══ TEMPORAL NAVIGATION (full width) ═══ */}
@@ -1590,9 +1596,8 @@ function PixelGlitchOverlay({ active, startAtGag, stocks: guideStocks, today: gu
         <div style={{ ...subHeader, marginTop: 4, marginBottom: 4 }}>{ARROW_R} SYSTEM CONSTANTS</div>
         <div style={{ ...proseSm, marginBottom: 8, lineHeight: 1.8 }}>
           <div><span style={{ color: GUIDE_LABEL }}>N</span> = 10 &nbsp;&nbsp; <span style={{ color: GUIDE_MUTED }}>total tickers in watchlist</span></div>
-          <div><span style={{ color: GUIDE_LABEL }}>N_T1</span> = 5 &nbsp;&nbsp; <span style={{ color: GUIDE_MUTED }}>tier 1 count</span></div>
-          <div><span style={{ color: GUIDE_LABEL }}>N_T2</span> = 5 &nbsp;&nbsp; <span style={{ color: GUIDE_MUTED }}>tier 2 count</span></div>
-          <div><span style={{ color: GUIDE_LABEL }}>CRUSH_WINDOW</span> = 5 &nbsp;&nbsp; <span style={{ color: GUIDE_MUTED }}>days</span></div>
+          <div><span style={{ color: GUIDE_LABEL }}>CLASS_i</span> ∈ {'{'} THRESHOLD-2, THRESHOLD-3, THRESHOLD-5 {'}'} &nbsp;&nbsp; <span style={{ color: GUIDE_MUTED }}>per-ticker pass class</span></div>
+          <div><span style={{ color: GUIDE_LABEL }}>CRUSH_WINDOW</span> = 3 &nbsp;&nbsp; <span style={{ color: GUIDE_MUTED }}>days</span></div>
           <div><span style={{ color: GUIDE_LABEL }}>QUIET_WINDOW</span> = 21 &nbsp;&nbsp; <span style={{ color: GUIDE_MUTED }}>days</span></div>
           <div><span style={{ color: GUIDE_LABEL }}>CRISIS_THRESHOLD</span> = −8 &nbsp;&nbsp; <span style={{ color: GUIDE_MUTED }}>% over {'≤'}7 trading days</span></div>
           <div><span style={{ color: GUIDE_LABEL }}>FLOOR_MIN</span> = 2</div>
@@ -1606,7 +1611,7 @@ function PixelGlitchOverlay({ active, startAtGag, stocks: guideStocks, today: gu
             ['H_i', 'FLOAT', '52-week high as of t'],
             ['L_i', 'FLOAT', '52-week low as of t'],
             ['IV_i', 'FLOAT', 'implied volatility %'],
-            ['T_i', 'INT{1,2}', 'tier classification'],
+            ['CLASS_i', 'THRESHOLD-{2,3,5}', 'pass classifier'],
             ['d_lastEarn', 'DATE', 'most recent earnings date'],
             ['d_nextEarn', 'DATE', 'next scheduled earnings date'],
             ['d_qtrEnd', 'DATE', 'fiscal quarter end date'],
@@ -1663,11 +1668,12 @@ function PixelGlitchOverlay({ active, startAtGag, stocks: guideStocks, today: gu
             <span style={{ ...tbl, flex: 0.5, color: COLORS.blue, letterSpacing: 1, textAlign: 'right' }}>VAL</span>
           </div>
           {[
-            ['C_price', 'α ≤ 10', '+3'],
-            ['', '10 < α ≤ 20', '+2'],
+            ['C_price', 'α ≤ 10', '+1'],
+            ['', '10 < α ≤ 20 (sweet spot)', '+2'],
             ['', '20 < α ≤ 50', '+1'],
             ['', 'α > 50', '0'],
-            ['C_high', 'β < 20', '−1'],
+            ['C_high', 'CRISIS → waived', '0'],
+            ['', 'β < 20', '−1'],
             ['', 'β ≥ 20', '0'],
             ['C_crisis', 'mode = CRISIS', '+2'],
             ['', 'mode = NORMAL', '0'],
@@ -1692,16 +1698,12 @@ function PixelGlitchOverlay({ active, startAtGag, stocks: guideStocks, today: gu
         </div>
 
         {/* ► PROCEDURE 4: CLASSIFY */}
-        <div style={{ ...subHeader, marginTop: 4, marginBottom: 4 }}>{ARROW_R} PROCEDURE 4: SIGNAL_CLASSIFY(score, T_i) → signal</div>
+        <div style={{ ...subHeader, marginTop: 4, marginBottom: 4 }}>{ARROW_R} PROCEDURE 4: SIGNAL_CLASSIFY(score, CLASS_i) → signal</div>
         <div style={{ ...proseSm, marginBottom: 6, lineHeight: 1.8 }}>
-          <div style={{ color: COLORS.blue }}>MAP:</div>
-          <div>&nbsp;&nbsp;score {'≥'} 3 → GREEN</div>
-          <div>&nbsp;&nbsp;score = 2 → YELLOW</div>
-          <div>&nbsp;&nbsp;score {'≤'} 1 → DIM <span style={{ color: GUIDE_MUTED }}>// no signal</span></div>
-          <div style={{ marginTop: 2, color: COLORS.blue }}>TIER GATE:</div>
-          <div>&nbsp;&nbsp;T_i = 1 → emit if score {'≥'} 2 &nbsp;&nbsp; <span style={{ color: GUIDE_MUTED }}>// GREEN + YELLOW</span></div>
-          <div>&nbsp;&nbsp;T_i = 2 → emit if score {'≥'} 3 &nbsp;&nbsp; <span style={{ color: GUIDE_MUTED }}>// GREEN only</span></div>
-          <div>&nbsp;&nbsp;<span style={{ color: COLORS.blue }}>ELSE</span> → suppress</div>
+          <div style={{ color: COLORS.blue }}>CLASSIFIER GATE:</div>
+          <div>&nbsp;&nbsp;<span style={{ color: COLORS.blue }}>IF</span> score {'≥'} CLASS_i → <span style={{ color: COLORS.green }}>GREEN</span> &nbsp;&nbsp; <span style={{ color: GUIDE_MUTED }}>// emit signal</span></div>
+          <div>&nbsp;&nbsp;<span style={{ color: COLORS.blue }}>ELSE</span> → <span style={{ color: GUIDE_MUTED }}>DIM</span> &nbsp;&nbsp; <span style={{ color: GUIDE_MUTED }}>// suppress</span></div>
+          <div style={{ marginTop: 4, color: GUIDE_MUTED }}>THRESHOLD-5: AMZN, CMCSA &nbsp;&nbsp; THRESHOLD-3: AAPL, DIS, MSFT &nbsp;&nbsp; THRESHOLD-2: all others</div>
         </div>
 
         {/* ► PROCEDURE 5: BACKTEST LOOP */}
@@ -1711,7 +1713,7 @@ function PixelGlitchOverlay({ active, startAtGag, stocks: guideStocks, today: gu
           <div>&nbsp;&nbsp;<span style={{ color: GUIDE_LABEL }}>period_i</span> = PERIOD_RESOLVE(t, S_i)</div>
           <div>&nbsp;&nbsp;<span style={{ color: GUIDE_LABEL }}>mode_i</span> &nbsp;= CRISIS_DETECT(PH_i)</div>
           <div>&nbsp;&nbsp;<span style={{ color: GUIDE_LABEL }}>score_i</span> = SCORE_COMPUTE(S_i, period_i, mode_i)</div>
-          <div>&nbsp;&nbsp;<span style={{ color: GUIDE_LABEL }}>sig_i</span> &nbsp;&nbsp;= SIGNAL_CLASSIFY(score_i, T_i)</div>
+          <div>&nbsp;&nbsp;<span style={{ color: GUIDE_LABEL }}>sig_i</span> &nbsp;&nbsp;= SIGNAL_CLASSIFY(score_i, CLASS_i)</div>
           <div style={{ marginTop: 2 }}>&nbsp;&nbsp;<span style={{ color: COLORS.blue }}>IF</span> sig_i ≠ suppress:</div>
           <div>&nbsp;&nbsp;&nbsp;&nbsp;<span style={{ color: GUIDE_LABEL }}>r_i</span> = ((P_i(t_now) − P_i(t)) / P_i(t)) × 100</div>
         </div>
@@ -1770,8 +1772,8 @@ function PixelGlitchOverlay({ active, startAtGag, stocks: guideStocks, today: gu
 
         <div style={{ ...proseSm, marginBottom: 4, lineHeight: 1.8, color: GUIDE_LABEL }}>5. SCORE_COMPUTE</div>
         <div style={{ ...proseSm, marginBottom: 8, lineHeight: 1.8 }}>
-          <div><span style={{ color: GUIDE_LABEL }}>PRICE_SCORE</span>: α {'≤'} 10 → +3 | α {'≤'} 20 → +2 | α {'≤'} 50 → +1 | else → 0</div>
-          <div><span style={{ color: GUIDE_LABEL }}>HIGH_SCORE</span>: β {'<'} 20 → −1 | else → 0</div>
+          <div><span style={{ color: GUIDE_LABEL }}>PRICE_SCORE</span>: α {'≤'} 10 → +1 | α {'≤'} 20 → +2 | α {'≤'} 50 → +1 | else → 0</div>
+          <div><span style={{ color: GUIDE_LABEL }}>HIGH_SCORE</span>: <span style={{ color: COLORS.blue }}>IF</span> CRISIS → 0 (waived) | β {'<'} 20 → −1 | else → 0</div>
           <div><span style={{ color: GUIDE_LABEL }}>CRISIS_SCORE</span>: CRISIS → +2 | NORMAL → 0</div>
           <div><span style={{ color: GUIDE_LABEL }}>PERIOD_SCORE</span>: QUIET → +1 | CRUSH → 0 | OPEN → −1</div>
           <div style={{ marginTop: 4 }}><span style={{ color: GUIDE_LABEL }}>R</span> = PRICE + HIGH + CRISIS + PERIOD</div>
@@ -1781,16 +1783,16 @@ function PixelGlitchOverlay({ active, startAtGag, stocks: guideStocks, today: gu
 
         <div style={{ ...proseSm, marginBottom: 4, lineHeight: 1.8, color: GUIDE_LABEL }}>6. SIGNAL GENERATION</div>
         <div style={{ ...proseSm, marginBottom: 8, lineHeight: 1.8 }}>
-          <div><span style={{ color: COLORS.green }}>GREEN</span>: Final {'≥'} 3</div>
-          <div><span style={{ color: COLORS.amber }}>YELLOW</span>: Final = 2</div>
-          <div><span style={{ color: GUIDE_MUTED }}>NO SIGNAL</span>: Final {'≤'} 1</div>
+          <div><span style={{ color: COLORS.green }}>GREEN</span>: Final {'≥'} CLASS_i &nbsp;&nbsp; <span style={{ color: GUIDE_MUTED }}>per-ticker classifier</span></div>
+          <div><span style={{ color: GUIDE_MUTED }}>NO SIGNAL</span>: Final {'<'} CLASS_i</div>
+          <div style={{ marginTop: 4, color: GUIDE_MUTED }}>THRESHOLD-5: AMZN, CMCSA &nbsp;&nbsp; THRESHOLD-3: AAPL, DIS, MSFT &nbsp;&nbsp; THRESHOLD-2: all others</div>
         </div>
 
         <div style={{ ...subHeader, marginTop: 4, marginBottom: 4 }}>{ARROW_R} INSTRUCTIONS</div>
         <div style={{ ...proseSm, marginBottom: 8, lineHeight: 1.8 }}>
           <div>1. <span style={{ color: COLORS.blue }}>SEARCH</span> for current real-time data for the 3 tickers: Price, 52W High, 52W Low, Last Earnings Date, Next Earnings Date, and 7-day price history.</div>
           <div>2. <span style={{ color: COLORS.blue }}>CALCULATE</span> variables (α, β, Period, Mode) strictly per the Logic Specification above.</div>
-          <div>3. <span style={{ color: COLORS.blue }}>OUTPUT</span> a summary table with columns: Ticker, Price, Dist to 52wL (α), Dist to 52wH (β), Period Status, Total Score, and FINAL SIGNAL (Green / Yellow / No Signal).</div>
+          <div>3. <span style={{ color: COLORS.blue }}>OUTPUT</span> a summary table with columns: Ticker, Price, Dist to 52wL (α), Dist to 52wH (β), Period Status, Total Score, Classifier, and FINAL SIGNAL (Green / No Signal).</div>
         </div>
 
         <div style={{ ...subHeader, marginTop: 4, marginBottom: 4 }}>{ARROW_R} TICKERS</div>
@@ -1958,7 +1960,7 @@ function CRTOverlay() {
   );
 }
 
-function StockRow({ children, isLast, hasGreenSignal, hasYellowSignal, compact, isMobile, booted }) {
+function StockRow({ children, isLast, hasGreenSignal, compact, isMobile, booted }) {
   const h = compact ? 42 : 48;
   return (
     <div
@@ -1986,20 +1988,6 @@ function StockRow({ children, isLast, hasGreenSignal, hasYellowSignal, compact, 
           background: 'radial-gradient(ellipse 80% 100% at center, rgba(51,255,102,0.55) 0%, rgba(51,255,102,0.20) 30%, transparent 55%)',
           animation: 'sp1000greenSweep 3s ease-in-out infinite',
           filter: 'brightness(1.8)',
-          pointerEvents: 'none',
-        }} />
-      )}
-      {/* Yellow signal highlight — phosphor glow sweeping left-to-right, matching green intensity */}
-      {hasYellowSignal && !hasGreenSignal && booted && (
-        <div style={{
-          position: 'absolute',
-          top: 0,
-          bottom: 0,
-          left: '-60%',
-          width: '60%',
-          background: 'radial-gradient(ellipse 80% 100% at center, rgba(255,204,0,0.38) 0%, rgba(255,204,0,0.14) 30%, transparent 55%)',
-          animation: 'sp1000yellowSweep 3s ease-in-out infinite',
-          filter: 'brightness(1.35)',
           pointerEvents: 'none',
         }} />
       )}
@@ -2175,21 +2163,19 @@ function FrontFace({ stocks, today, loading, limitReached, lastSynced, showSyncT
           const floorReason = sig.floor1 ? 'nearLow' : sig.floor3 ? 'CRISIS' : '';
           console.log(`[Signal] ${stock.sym}: ${sig.pctAboveLow.toFixed(0)}% above low, ${sig.pctBelowHigh.toFixed(0)}% below high, 5d=${drawdown.pctChange.toFixed(1)}% ${drawdown.mode} | price=${sig.priceScore} high=${sig.nearHighPenalty} crisis=${sig.crisisBonus} period=${sig.periodBonus} = ${sig.rawScore}${floorReason ? ` (floor:${floorReason}→2)` : ''} → ${sig.score}`);
 
-          // Tier 2 stocks only show GREEN signals
-          const isTier2 = stock.tier === 2;
-          const isGreenSig = sig.score >= 3;
-          // YELLOW only shown for Tier 1 stocks
-          const isYellowSig = !isTier2 && sig.score === 2;
+          // V2: Per-ticker threshold — score must meet threshold to signal GREEN
+          const threshold = stock.threshold || 2;
+          const isGreenSig = sig.score >= threshold;
           // Find original index for onStockChange
           const origIdx = stocks.indexOf(stock);
           return (
             <React.Fragment key={stock.sym}>
-              <StockRow isLast={idx === sortedArr.length - 1} hasGreenSignal={isGreenSig} hasYellowSignal={isYellowSig} compact={isMobile} isMobile={isMobile} booted={booted}>
+              <StockRow isLast={idx === sortedArr.length - 1} hasGreenSignal={isGreenSig} compact={isMobile} isMobile={isMobile} booted={booted}>
                 <div
                   onClick={() => setSelectedStock({ stock, sig, periodInfo, drawdown })}
                   style={{ ...cellBase, width: isMobile ? 20 : 32, flexShrink: 0, padding: 0, cursor: 'pointer' }}
                 >
-                  <SignalLight sig={sig} tier={isTier2 ? 2 : 1} />
+                  <SignalLight sig={sig} threshold={threshold} />
                 </div>
                 <div
                   onClick={() => setSelectedStock({ stock, sig, periodInfo, drawdown })}
@@ -2319,7 +2305,7 @@ function StartupOverlay({ onComplete, onFadeIn }) {
     { text: 'ENFORCING SAFETY FLOOR OVERRIDES' },
     { text: '' },
     { text: 'CLASSIFYING TIER 1 / TIER 2 FILTERS' },
-    { text: 'COMPOSITING SIGNAL: GREEN / YELLOW / DIM' },
+    { text: 'COMPOSITING SIGNAL: GREEN / DIM' },
     { text: '' },
     { text: 'LOADING LEGAL DISCLAIMERS' },
     { text: 'CONFIRMING ALL CALCULATIONS . . . READY' },
@@ -3335,15 +3321,13 @@ function TimeMachineBlueprintOverlay({ stocks, historicalDate, onReturn, onEnter
     const drawdownMode = stock.drawdownMode || 'NORMAL';
     const sig = calcSignalData(stock.price, stock.w52h, stock.w52l, stock.iv, period, drawdownMode);
 
-    const isTier2 = stock.tier === 2;
-    const isGreen = sig.score >= 3;
-    const isYellow = !isTier2 && sig.score === 2;
+    const threshold = stock.threshold || 2;
+    const isGreen = sig.score >= threshold;
 
-    return { stock, sig, periodInfo, isGreen, isYellow, isTier2 };
+    return { stock, sig, periodInfo, isGreen, threshold };
   });
 
   const greenSignals = signalResults.filter(r => r.isGreen);
-  const yellowSignals = signalResults.filter(r => r.isYellow);
 
   // avgReturn helper removed — combined average computed below in signalSection
 
@@ -3353,7 +3337,7 @@ function TimeMachineBlueprintOverlay({ stocks, historicalDate, onReturn, onEnter
   const dateDisplay = `${months[d.getMonth()]} ${d.getDate()}, ${d.getFullYear()}`;
 
   // Compute portfolio average and alpha
-  const allSignals = [...greenSignals, ...yellowSignals];
+  const allSignals = greenSignals;
   const portfolioAvg = allSignals.length > 0
     ? allSignals.reduce((sum, r) => sum + r.stock.historicalReturn, 0) / allSignals.length
     : null;
@@ -3391,11 +3375,11 @@ function TimeMachineBlueprintOverlay({ stocks, historicalDate, onReturn, onEnter
 
   // Signal card — tall rounded rectangle with vertical stack
   const signalCard = (result) => {
-    const { stock, sig, isGreen } = result;
+    const { stock, sig } = result;
     const returnPct = stock.historicalReturn;
     const returnColor = returnPct >= 0 ? COLORS.green : '#ff4444';
-    const signalColor = isGreen ? COLORS.green : COLORS.amber;
-    const signalLabel = isGreen ? 'GREEN' : 'YELLOW';
+    const signalColor = COLORS.green;
+    const signalLabel = 'GREEN';
 
     return (
       <div key={stock.sym} style={{
@@ -3446,7 +3430,7 @@ function TimeMachineBlueprintOverlay({ stocks, historicalDate, onReturn, onEnter
     );
   };
 
-  // Combined signal grid — all GREEN and YELLOW cards in one row
+  // Combined signal grid — all GREEN cards in one row
   const signalGrid = (allSigs) => {
     if (allSigs.length === 0) return null;
     // Use fixed equal columns — 1fr ensures all cards are same width and aligned
@@ -3509,7 +3493,7 @@ function TimeMachineBlueprintOverlay({ stocks, historicalDate, onReturn, onEnter
           </div>
         )}
 
-        {!loading && greenSignals.length === 0 && yellowSignals.length === 0 && (
+        {!loading && greenSignals.length === 0 && (
           <div style={{
             textAlign: 'center', padding: '24px 20px 18px', margin: '12px 16px',
             border: '1px solid rgba(255,255,255,0.25)',
@@ -3522,8 +3506,8 @@ function TimeMachineBlueprintOverlay({ stocks, historicalDate, onReturn, onEnter
               On this date, the <span style={{ color: COLORS.green }}>SP-1000 LEAPS TRACKER</span> did not produce a signal. The system is designed to identify high-conviction conditions, not continuous trading activity. Favorable conditions must align across price position, drawdown velocity, and the corporate calendar before the system activates.
             </div>
             {hasBenchmark && (
-              <div style={{ fontFamily: MONO, fontSize: 8, color: '#888', letterSpacing: 2, marginTop: 18 }}>
-                S&P 500 RETURN: <span style={{ color: COLORS.green, letterSpacing: 1 }}>{benchmarkReturn >= 0 ? '+' : ''}{benchmarkReturn.toFixed(1)}%</span>
+              <div style={{ fontFamily: MONO, fontSize: 8, color: '#ffffff', lineHeight: 2.0, letterSpacing: 1, marginTop: 18 }}>
+                S&P 500 RETURN: <span style={{ color: COLORS.green }}>{benchmarkReturn >= 0 ? '+' : ''}{benchmarkReturn.toFixed(1)}%</span>
               </div>
             )}
           </div>
@@ -3556,11 +3540,11 @@ function TimeMachineBlueprintOverlay({ stocks, historicalDate, onReturn, onEnter
           </div>
         )}
 
-        {/* Signal Grid — GREEN and YELLOW cards in one row */}
+        {/* Signal Grid — GREEN cards in one row */}
         {!loading && signalGrid(allSignals)}
 
         {/* Performance Delta */}
-        {!loading && (greenSignals.length > 0 || yellowSignals.length > 0) && (
+        {!loading && greenSignals.length > 0 && (
           <div style={{ marginBottom: 16 }}>
             <div style={{
               fontFamily: MONO, fontSize: 7, color: COLORS.dim, letterSpacing: 3, marginBottom: 8,
@@ -3687,15 +3671,15 @@ function TimeMachineBlueprintOverlay({ stocks, historicalDate, onReturn, onEnter
             };
 
             return (
-              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 14 }}>
+              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 14, paddingTop: 20, paddingBottom: 16 }}>
                 {/* Travel to new date button */}
                 {onEnterNewDate && (
-                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4 }}>
+                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4, paddingBottom: 8 }}>
                     <span
                       onClick={onEnterNewDate}
                       style={{
                         fontFamily: MONO, fontSize: 9, letterSpacing: 4,
-                        color: '#fff', cursor: 'pointer', padding: '5px 14px',
+                        color: '#fff', cursor: 'pointer', padding: '8px 18px',
                         border: '1px solid rgba(255,255,255,0.5)',
                         borderRadius: 6,
                         display: 'inline-block',
@@ -3705,23 +3689,27 @@ function TimeMachineBlueprintOverlay({ stocks, historicalDate, onReturn, onEnter
                     >
                       TRAVEL TO NEW DATE
                     </span>
-                    <span style={{
-                      fontFamily: MONO, fontSize: 7, letterSpacing: 2,
-                      color: '#fff', opacity: 0.5,
-                    }}>
-                      2016 – 2026
-                    </span>
                   </div>
                 )}
-                {/* Time travel navigation — back only */}
-                {prev && (
-                  <div style={{ display: 'flex', justifyContent: 'flex-start', width: '100%', padding: '0 12px', boxSizing: 'border-box' }}>
-                    <span
-                      onClick={() => onNavigate(prev)}
-                      style={tmNavBtnStyle}
-                    >
-                      {'\u25C2'} JUMP BACK IN TIME
-                    </span>
+                {/* Time travel navigation — back and forward */}
+                {(prev || next) && (
+                  <div style={{ display: 'flex', justifyContent: 'space-between', width: '100%', padding: '8px 12px 0', boxSizing: 'border-box' }}>
+                    {prev ? (
+                      <span
+                        onClick={() => onNavigate(prev)}
+                        style={tmNavBtnStyle}
+                      >
+                        {'\u25C2'} JUMP BACK IN TIME
+                      </span>
+                    ) : <span />}
+                    {next ? (
+                      <span
+                        onClick={() => onNavigate(next)}
+                        style={tmNavBtnStyle}
+                      >
+                        JUMP FORWARD IN TIME {'\u25B8'}
+                      </span>
+                    ) : <span />}
                   </div>
                 )}
               </div>
@@ -3770,17 +3758,18 @@ export default function Terminal({ stocks = [], today, onRefresh, loading, limit
   const overlayActive = !!(timeMachineDate || timeMachineAnimating || timeMachineInput || (glitching && (!guideBlurred || contactGag)));
   React.useEffect(() => {
     if (returnSliding && !overlayActive) {
-      // Start SP-1000 brightness pop while RETURN is still slid right
-      setReturnSlidePop(true);
+      // SP-1000 brightness pop already triggered by click handler timeout
       // After pop completes, switch to normal toolbar — SP-1000 dims first, then nav fades in
       // NOTE: Do NOT increment navSweepKey here. The toolbar switches from overlay→normal,
       // which remounts the nav buttons naturally — their fade-in animation plays on mount.
       // Incrementing navSweepKey would remount them AGAIN mid-fade, causing a visible blink.
       setTimeout(() => {
+        // Clear sliding first — switches to normal toolbar where SP-1000 is always visible
         setReturnSliding(false);
-        setReturnSlidePop(false);
         setReturnDimming(true);
         setNavRevealing(true);
+        // Clear pop after toolbar has switched so there's no flash gap
+        requestAnimationFrame(() => setReturnSlidePop(false));
         setTimeout(() => setReturnDimming(false), 600);
         setTimeout(() => {
           setNavRevealing(false);
@@ -4136,6 +4125,13 @@ export default function Terminal({ stocks = [], today, onRefresh, loading, limit
           0%, 100% { text-shadow: 0 0 8px rgba(255,255,255,0.6), 0 0 16px rgba(255,255,255,0.3); }
           50% { text-shadow: 0 0 12px rgba(255,255,255,1), 0 0 24px rgba(255,255,255,0.7), 0 0 36px rgba(255,255,255,0.3); }
         }
+        @keyframes sp1000doubleThrob {
+          0%, 100% { text-shadow: 0 0 8px rgba(255,255,255,0.6), 0 0 16px rgba(255,255,255,0.3); }
+          12% { text-shadow: 0 0 14px rgba(255,255,255,1), 0 0 28px rgba(255,255,255,0.8), 0 0 40px rgba(255,255,255,0.4); }
+          24% { text-shadow: 0 0 8px rgba(255,255,255,0.6), 0 0 16px rgba(255,255,255,0.3); }
+          36% { text-shadow: 0 0 14px rgba(255,255,255,1), 0 0 28px rgba(255,255,255,0.8), 0 0 40px rgba(255,255,255,0.4); }
+          48% { text-shadow: 0 0 8px rgba(255,255,255,0.6), 0 0 16px rgba(255,255,255,0.3); }
+        }
         @keyframes sp1000returnDim {
           0% { filter: brightness(4); text-shadow: 0 0 8px #fff, 0 0 16px rgba(255,255,255,0.95), 0 0 32px rgba(255,255,255,0.7), 0 0 48px rgba(255,255,255,0.4); }
           100% { filter: brightness(1.2); text-shadow: 0 0 6px rgba(255,255,255,0.9), 0 0 14px rgba(255,255,255,0.6), 0 0 28px rgba(255,255,255,0.3), 0 0 48px rgba(255,255,255,0.1); }
@@ -4490,7 +4486,7 @@ export default function Terminal({ stocks = [], today, onRefresh, loading, limit
               />
               {(timeMachineDate || tmFadingOut) && timeMachineStocks && !timeMachineAnimating && (
                 <div style={{
-                  opacity: (tmFadingOut || wormholeActive) ? 0 : 1,
+                  opacity: tmFadingOut ? 0 : 1,
                   transition: tmFadingOut ? 'opacity 0.6s ease-out' : 'none',
                   position: 'absolute', top: 0, left: 0, right: 0, bottom: 0,
                 }}>
@@ -4544,12 +4540,21 @@ export default function Terminal({ stocks = [], today, onRefresh, loading, limit
                       if (wasContact) setBooted(false);
                     }
                   };
-                  setReturnSliding(true);
-                  setReturnScreenFade(true);
-                  setTimeout(() => setReturnSlidePop(true), 550);
-                  setTimeout(() => {
-                    doReturn();
-                  }, 800);
+                  // Start wormhole stars first, then slide after they've faded in
+                  if (timeMachineDate) {
+                    setWormholeActive(true);
+                    setTimeout(() => {
+                      setReturnSliding(true);
+                      setReturnScreenFade(true);
+                      setTimeout(() => setReturnSlidePop(true), 550);
+                      setTimeout(() => { doReturn(); }, 800);
+                    }, 900);
+                  } else {
+                    setReturnSliding(true);
+                    setReturnScreenFade(true);
+                    setTimeout(() => setReturnSlidePop(true), 550);
+                    setTimeout(() => { doReturn(); }, 800);
+                  }
                 }}
                 style={{
                   fontFamily: MONO,
@@ -4561,7 +4566,9 @@ export default function Terminal({ stocks = [], today, onRefresh, loading, limit
                   textShadow: '0 0 8px rgba(255,255,255,0.6), 0 0 16px rgba(255,255,255,0.3)',
                   animation: contactGag && restartVisible && !returnSliding
                     ? 'sp1000restartThrob 1.5s ease-in-out 0.8s infinite'
-                    : (!returnSliding && !contactGag ? 'sp1000returnGlow 1.5s ease-out forwards' : 'none'),
+                    : timeMachineDate && !timeMachineAnimating && !returnSliding
+                      ? 'sp1000doubleThrob 2.5s ease-in-out 3s infinite'
+                      : (!returnSliding && !contactGag ? 'sp1000returnGlow 1.5s ease-out forwards' : 'none'),
                   transition: contactGag
                     ? 'left 0.7s ease-in-out, opacity 1.2s ease-in'
                     : 'left 0.7s ease-in-out, opacity 0.25s ease-in 0.45s',
