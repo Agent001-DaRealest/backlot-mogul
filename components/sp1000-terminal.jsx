@@ -544,8 +544,8 @@ function SignalExplainOverlay({ stock, sig, periodInfo, drawdown, onClose }) {
   // Period color
   const periodColor = periodInfo.period === 'QUIET' ? COLORS.red : periodInfo.period === 'CRUSH' ? COLORS.blue : COLORS.green;
 
-  // Floor reason
-  const floorApplied = sig.floor1 || sig.floor3;
+  // Floor reason — only show if floor actually raised the score
+  const floorApplied = (sig.floor1 || sig.floor3) && sig.rawScore < 2;
   const floorLabel = sig.floor3 ? 'CRISIS' : sig.floor1 ? 'NEAR LOW' : '';
 
   // Shared styles
@@ -715,12 +715,26 @@ function SignalExplainOverlay({ stock, sig, periodInfo, drawdown, onClose }) {
         {/* ── TOTAL ── */}
         <div style={{
           borderTop: `2px solid ${borderColor}`,
-          paddingTop: 10,
+          paddingTop: 12,
           marginTop: 4,
+          background: passes
+            ? 'linear-gradient(180deg, rgba(51,255,102,0.06) 0%, transparent 100%)'
+            : 'linear-gradient(180deg, rgba(255,255,255,0.03) 0%, transparent 100%)',
+          marginLeft: -20,
+          marginRight: -20,
+          paddingLeft: 20,
+          paddingRight: 20,
+          paddingBottom: 4,
         }}>
-          <div style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'baseline', gap: 8, marginBottom: 4 }}>
-            <span style={{ fontFamily: MONO, fontSize: 10, color: COLORS.dim, letterSpacing: 1 }}>TOTAL =</span>
-            <span style={{ fontFamily: MONO, fontSize: 16, color: sig.score >= 0 ? COLORS.green : COLORS.red, fontWeight: 700 }}>{sig.score}</span>
+          <div style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'baseline', gap: 8, marginBottom: 6 }}>
+            <span style={{ fontFamily: MONO, fontSize: 11, color: '#ffffff', letterSpacing: 2, fontWeight: 600 }}>TOTAL</span>
+            <span style={{
+              fontFamily: MONO, fontSize: 11, fontWeight: 700, letterSpacing: 1,
+              color: sig.score >= 0 ? '#ffffff' : COLORS.red,
+              textShadow: passes
+                ? '0 0 10px rgba(51,255,102,0.7), 0 0 24px rgba(51,255,102,0.35)'
+                : '0 0 8px rgba(255,255,255,0.4)',
+            }}>{sig.score}</span>
           </div>
           {floorApplied && (
             <div style={{ textAlign: 'right', marginBottom: 4 }}>
@@ -729,22 +743,6 @@ function SignalExplainOverlay({ stock, sig, periodInfo, drawdown, onClose }) {
               </span>
             </div>
           )}
-          <div style={{ textAlign: 'right', marginBottom: 4 }}>
-            <span style={{ fontFamily: MONO, fontSize: 9, color: COLORS.dim, letterSpacing: 1 }}>
-              {thresholdClass(threshold)}: score {'≥'} {threshold} → GREEN
-            </span>
-          </div>
-          <div style={{ textAlign: 'right' }}>
-            <span style={{ fontFamily: MONO, fontSize: 10, color: COLORS.dim, marginRight: 8 }}>SIGNAL:</span>
-            <span style={{
-              fontFamily: MONO, fontSize: 11, color: signalTextColor, fontWeight: 700, letterSpacing: 2,
-              textShadow: passes
-                ? '0 0 8px rgba(51,255,102,0.6), 0 0 16px rgba(51,255,102,0.3)'
-                : 'none',
-            }}>
-              {signalLabel}
-            </span>
-          </div>
         </div>
 
         {/* ── Footer: verify + dismiss ── */}
@@ -772,15 +770,16 @@ function SignalExplainOverlay({ stock, sig, periodInfo, drawdown, onClose }) {
               fontFamily: MONO,
               fontSize: 10,
               letterSpacing: 3,
-              color: COLORS.amber,
-              backgroundColor: 'transparent',
-              border: `1px solid ${COLORS.amber}88`,
+              color: '#000000',
+              backgroundColor: '#ffffff',
+              border: 'none',
               padding: '5px 18px',
               borderRadius: 4,
               cursor: 'pointer',
               textTransform: 'uppercase',
-              fontWeight: 500,
-              textShadow: '0 0 6px rgba(255,170,0,0.4)',
+              fontWeight: 700,
+              textShadow: 'none',
+              boxShadow: '0 1px 0 #aaaaaa, 0 2px 4px rgba(0,0,0,0.25), inset 0 1px 0 rgba(255,255,255,0.6)',
             }}
           >
             DISMISS
@@ -1360,7 +1359,7 @@ function PixelGlitchOverlay({ active, startAtGag, stocks: guideStocks, today: gu
             padding: guideIsMobile ? '6px 8px' : '6px 10px',
             background: 'rgba(255,255,255,0.015)',
           }}>
-            <div style={{ fontFamily: MONO, fontSize: F, color: '#ffffff', letterSpacing: 2, fontWeight: 'bold' }}>
+            <div style={{ fontFamily: MONO, fontSize: F, color: COLORS.amber, letterSpacing: 2, fontWeight: 'bold' }}>
               CRISIS MODE
             </div>
             <div style={{ fontFamily: MONO, fontSize: F - 2, color: GUIDE_TEXT, marginTop: 2, lineHeight: 1.4 }}>
@@ -1960,8 +1959,50 @@ function CRTOverlay() {
   );
 }
 
-function StockRow({ children, isLast, hasGreenSignal, compact, isMobile, booted }) {
+function StockRow({ children, isLast, hasGreenSignal, pctAboveLow, signalScore, signalThreshold, periodColor, compact, isMobile, booted }) {
   const h = compact ? 42 : 48;
+
+  // Sweep intensity blends two factors:
+  //   60% proximity to 52W low (lower = brighter)
+  //   40% score headroom above threshold (higher surplus = brighter)
+  //
+  // Proximity factor: 0–10% above low → 1.0, 10–50% → linear decay, >50% → 0.10
+  const proxRaw = pctAboveLow <= 10 ? 1.0
+    : pctAboveLow <= 50 ? 1.0 - ((pctAboveLow - 10) / 40) * 0.90
+    : 0.10;
+  const proxFactor = Math.max(0.10, Math.min(1.0, proxRaw));
+
+  // Score factor: how far the score exceeds the threshold
+  // surplus 0 (barely GREEN) → 0.25, surplus 1 → 0.55, surplus 2 → 0.80, surplus 3+ → 1.0
+  const surplus = Math.max(0, (signalScore || 0) - (signalThreshold || 2));
+  const scoreFactor = Math.min(1.0, 0.25 + surplus * 0.25);
+
+  const intensity = Math.max(0.10, Math.min(1.0, proxFactor * 0.6 + scoreFactor * 0.4));
+
+  // Map intensity to visual properties — duration stays constant so sweeps stay in sync
+  // All outputs scaled down 30% from original values
+  const peakAlpha = (0.04 + intensity * 0.41).toFixed(2);   // 0.04–0.45
+  const midAlpha = (0.01 + intensity * 0.16).toFixed(2);    // 0.01–0.17
+  const brightness = (0.5 + intensity * 0.91).toFixed(1);   // 0.5–1.4
+
+  // Period color RGB for sweep tint layer
+  // Sweep transitions from green → period color at the right side of the row
+  const needsPeriodTint = periodColor && periodColor !== COLORS.green;
+  const periodRgb = periodColor === COLORS.red ? '255,85,85'
+    : periodColor === '#00aaff' ? '0,170,255'
+    : '51,255,102';
+
+  const sweepBase = {
+    position: 'absolute',
+    top: 0,
+    bottom: 0,
+    left: '-60%',
+    width: '60%',
+    animation: 'sp1000greenSweep 3s ease-in-out infinite',
+    filter: `brightness(${brightness})`,
+    pointerEvents: 'none',
+  };
+
   return (
     <div
       style={{
@@ -1977,18 +2018,24 @@ function StockRow({ children, isLast, hasGreenSignal, compact, isMobile, booted 
         flexShrink: 0,
       }}
     >
-      {/* Green signal highlight — tight phosphor glow sweeping left-to-right */}
+      {/* Green sweep — fades out before period column when period isn't green */}
       {hasGreenSignal && booted && (
         <div style={{
-          position: 'absolute',
-          top: 0,
-          bottom: 0,
-          left: '-60%',
-          width: '60%',
-          background: 'radial-gradient(ellipse 80% 100% at center, rgba(51,255,102,0.55) 0%, rgba(51,255,102,0.20) 30%, transparent 55%)',
-          animation: 'sp1000greenSweep 3s ease-in-out infinite',
-          filter: 'brightness(1.8)',
-          pointerEvents: 'none',
+          ...sweepBase,
+          background: `radial-gradient(ellipse 80% 100% at center, rgba(51,255,102,${peakAlpha}) 0%, rgba(51,255,102,${midAlpha}) 30%, transparent 55%)`,
+          ...(needsPeriodTint ? {
+            maskImage: 'linear-gradient(to right, black 65%, transparent 100%)',
+            WebkitMaskImage: 'linear-gradient(to right, black 65%, transparent 100%)',
+          } : {}),
+        }} />
+      )}
+      {/* Period color tint — fades in at period column */}
+      {hasGreenSignal && booted && needsPeriodTint && (
+        <div style={{
+          ...sweepBase,
+          background: `radial-gradient(ellipse 80% 100% at center, rgba(${periodRgb},${peakAlpha}) 0%, rgba(${periodRgb},${midAlpha}) 30%, transparent 55%)`,
+          maskImage: 'linear-gradient(to right, transparent 65%, black 100%)',
+          WebkitMaskImage: 'linear-gradient(to right, transparent 65%, black 100%)',
         }} />
       )}
       {children}
@@ -2170,7 +2217,7 @@ function FrontFace({ stocks, today, loading, limitReached, lastSynced, showSyncT
           const origIdx = stocks.indexOf(stock);
           return (
             <React.Fragment key={stock.sym}>
-              <StockRow isLast={idx === sortedArr.length - 1} hasGreenSignal={isGreenSig} compact={isMobile} isMobile={isMobile} booted={booted}>
+              <StockRow isLast={idx === sortedArr.length - 1} hasGreenSignal={isGreenSig} pctAboveLow={sig.pctAboveLow} signalScore={sig.score} signalThreshold={threshold} periodColor={periodInfo.color} compact={isMobile} isMobile={isMobile} booted={booted}>
                 <div
                   onClick={() => setSelectedStock({ stock, sig, periodInfo, drawdown })}
                   style={{ ...cellBase, width: isMobile ? 20 : 32, flexShrink: 0, padding: 0, cursor: 'pointer' }}
