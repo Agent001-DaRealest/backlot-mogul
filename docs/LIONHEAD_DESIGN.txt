@@ -1,0 +1,882 @@
+╔══════════════════════════════════════════════════════════════════════════════════╗
+║                                                                                  ║
+║   BACKLOT MOGUL — "THE LIONHEAD DOCUMENT"                                       ║
+║   Memory, Consequence, and the Art of Making Players Feel Seen                   ║
+║                                                                                  ║
+║   "A delayed consequence is worth ten immediate ones."                            ║
+║                                                                                  ║
+╚══════════════════════════════════════════════════════════════════════════════════╝
+
+
+═══════════════════════════════════════════════════════════════════════════════════
+ §1  THE PHILOSOPHY
+═══════════════════════════════════════════════════════════════════════════════════
+
+  Lionhead's genius was never the AI. It was the RECEIPTS.
+
+  In Fable, if you kicked a chicken in Oakvale, a farmer mentioned
+  it three hours later. The player didn't think anyone was watching.
+  That's the magic — the feeling of being watched by a world that
+  cares about what you did.
+
+  Our version: every choice the player makes — even ones that seem
+  cosmetic or throwaway — gets logged to a MEMORY LEDGER. We don't
+  need to USE every entry right away. We just need to HAVE it, so
+  that when we write dialogue or trigger events, we can reach back
+  and pull something out that makes the player say "holy shit, it
+  remembered that."
+
+  The key insight: TRACK EVERYTHING. USE IT LATER.
+  Don't design the payoff first. Design the tracking first.
+  The payoffs will suggest themselves.
+
+
+═══════════════════════════════════════════════════════════════════════════════════
+ §2  THE MEMORY LEDGER — What We Track
+═══════════════════════════════════════════════════════════════════════════════════
+
+  The Memory Ledger is a flat array in the Zustand store.
+  Each entry is a small object:
+
+  {
+    film: 1,                    // which film number
+    beat: 'talent',             // which phase it happened in
+    tag: 'demand_denied',       // machine-readable tag for lookups
+    actor: 'The Auteur',        // who was involved
+    detail: 'final_cut',        // specifics
+    sentiment: -2,              // how the NPC "feels" about it (-3 to +3)
+    timestamp: 4,               // turn number (for ordering)
+    surfaced: false,            // has this been referenced in dialogue yet?
+  }
+
+  CATEGORIES OF THINGS WE TRACK:
+
+  ┌─────────────────────────────────────────────────────────────────────────┐
+  │                                                                         │
+  │  GENRE CHOICES                                                          │
+  │  ─────────────────────────────────────────────────────────              │
+  │  • genre_picked       — which genre, was it hot/warm/cold               │
+  │  • genre_repeated     — same genre as last film                         │
+  │  • genre_cold_pick    — deliberately chose a cold genre                 │
+  │  • genre_streak       — 3+ films in same genre = "specialist"           │
+  │                                                                         │
+  │  PITCH / CONCEPT                                                        │
+  │  ─────────────────────────────────────────────────────────              │
+  │  • pitch_chosen       — which logline, was it the riskier one           │
+  │  • custom_title       — player wrote their own title (creative type)    │
+  │  • rating_chosen      — G vs NC-17 says something about the player      │
+  │  • rating_mismatch    — horror + G rating = interesting choice          │
+  │                                                                         │
+  │  BUDGET / NEGOTIATION                                                   │
+  │  ─────────────────────────────────────────────────────────              │
+  │  • budget_tier        — indie/studio/blockbuster                        │
+  │  • budget_bluffed     — tried the bluff answer                          │
+  │  • budget_bluff_fail  — bluff caught (Suit remembers liars)             │
+  │  • budget_downgraded  — asked for blockbuster, got studio               │
+  │  • budget_always_indie— never tried for more money (cautious)           │
+  │                                                                         │
+  │  TALENT / CASTING                                                       │
+  │  ─────────────────────────────────────────────────────────              │
+  │  • talent_hired       — who was cast, in what role                       │
+  │  • talent_rehired     — same person cast again (loyalty)                │
+  │  • demand_accepted    — gave A-lister what they wanted                  │
+  │  • demand_denied      — refused A-lister's demand                       │
+  │  • talent_refused_you — A-lister passed on your project (humiliation)   │
+  │  • cheap_cast         — all no-names / C-list (budget conscious)        │
+  │  • all_star_cast      — all A-list (big spender)                        │
+  │  • brother_in_law     — hired Your Brother-in-Law (loyalty/desperation) │
+  │  • moms_friend        — hired Your Mom's Friend (same)                  │
+  │                                                                         │
+  │  PRODUCTION / CRISIS                                                    │
+  │  ─────────────────────────────────────────────────────────              │
+  │  • crisis_choice      — which option (A or B) for each crisis card      │
+  │  • crisis_quality     — consistently picked quality over hype or vice   │
+  │  • crisis_streak      — 3+ same-type choices = "pattern"                │
+  │                                                                         │
+  │  RESULTS                                                                │
+  │  ─────────────────────────────────────────────────────────              │
+  │  • film_verdict       — blockbuster/hit/modest/cult/flop                │
+  │  • film_flop          — specific flop tracking (NPCs remember failures) │
+  │  • film_blockbuster   — specific hit tracking                           │
+  │  • streak_hot         — 2+ hits in a row                                │
+  │  • streak_cold        — 2+ flops in a row                               │
+  │                                                                         │
+  │  BUILDINGS / PARK                                                       │
+  │  ─────────────────────────────────────────────────────────              │
+  │  • building_bought    — which building, when                            │
+  │  • building_maxed     — maxed out a building                            │
+  │  • ride_placed        — which film got a ride                           │
+  │  • ride_demolished    — player destroyed a ride (why?)                  │
+  │                                                                         │
+  │  META / BEHAVIORAL                                                      │
+  │  ─────────────────────────────────────────────────────────              │
+  │  • play_style         — derived: "auteur" / "populist" / "gambler"     │
+  │  • risk_tolerance     — derived from cold picks + bluffs                │
+  │  • loyalty_score      — derived from rehires + demand acceptance        │
+  │  • ego_score          — derived from blockbuster budgets + A-list casts │
+  │                                                                         │
+  └─────────────────────────────────────────────────────────────────────────┘
+
+
+═══════════════════════════════════════════════════════════════════════════════════
+ §3  THE GRUDGE & LOYALTY SYSTEM — Talent Remembers
+═══════════════════════════════════════════════════════════════════════════════════
+
+  This is the Lionhead muscle. Each ARCHETYPE (not instance) has a
+  persistent relationship score with the player across films.
+
+  ┌─────────────────────────────────────────────────────────────────────────┐
+  │                                                                         │
+  │  TALENT RELATIONSHIPS (persists in store)                               │
+  │                                                                         │
+  │  talentRelations: {                                                     │
+  │    'The Auteur':     { loyalty: 0, grudge: 0, timesHired: 0,           │
+  │                        lastFilm: null, demandHistory: [] },             │
+  │    'The Movie Star': { loyalty: 0, grudge: 0, timesHired: 0,           │
+  │                        lastFilm: null, demandHistory: [] },             │
+  │    ...                                                                  │
+  │  }                                                                      │
+  │                                                                         │
+  │  WHAT MOVES THE NEEDLE:                                                 │
+  │                                                                         │
+  │  Loyalty +1:  Hired them                                                │
+  │  Loyalty +2:  Hired them AND accepted their demand                      │
+  │  Loyalty +1:  Their film was a hit                                      │
+  │  Grudge +1:   Denied their demand                                       │
+  │  Grudge +2:   Denied demand AND the film flopped (they blame you)       │
+  │  Grudge +1:   They were available but you picked someone else           │
+  │  Grudge -1:   Time passes (grudges fade, slowly)                        │
+  │  Loyalty -1:  Their film flopped (they distance themselves)             │
+  │                                                                         │
+  └─────────────────────────────────────────────────────────────────────────┘
+
+  HOW THIS MANIFESTS:
+
+  ┌───────────────────────┬────────────────────────────────────────────────┐
+  │ Condition              │ What Happens                                   │
+  ╞═══════════════════════╪════════════════════════════════════════════════╡
+  │                        │                                                │
+  │ Grudge ≥ 2             │ Talent may REFUSE your project even if rep     │
+  │                        │ is high enough. Connector says:                │
+  │                        │ "They haven't forgotten about last time."      │
+  │                        │                                                │
+  │ Grudge ≥ 3             │ Talent actively BAD-MOUTHS your studio.        │
+  │                        │ News ticker: "The Auteur calls Pacific Dreams  │
+  │                        │ 'a factory for mediocrity'" → Hype -5 penalty  │
+  │                        │                                                │
+  │ Loyalty ≥ 3            │ Talent gives you a DISCOUNT (10% off fee).     │
+  │                        │ Connector: "They love working with you.        │
+  │                        │ Practically begging for the part."             │
+  │                        │                                                │
+  │ Loyalty ≥ 5            │ Talent drops their DEMAND entirely.            │
+  │                        │ "For you? No conditions. Let's make art."      │
+  │                        │                                                │
+  │ Hired 3+ times         │ Becomes your "MUSE" — permanent Q+5 bonus     │
+  │                        │ when working together. Connector: "You two     │
+  │                        │ have something special. The audience sees it." │
+  │                        │                                                │
+  │ Denied demand then     │ WALKOUT CRISIS: During production, crisis      │
+  │ hired again next film  │ card appears: "[Talent] walks off set.         │
+  │ AND denied again       │ Says 'I should have known. You never change.'"│
+  │                        │ Quality -15. Must recast with whoever's left.  │
+  │                        │                                                │
+  │ Film flopped with      │ Talent publicly blames YOU in the press.       │
+  │ A-lister attached      │ "[Star] says 'the script was rewritten        │
+  │                        │ seventeen times. I lost faith in the vision.'" │
+  │                        │ Hype -8 on NEXT film.                          │
+  │                        │                                                │
+  │ Film was blockbuster   │ Talent credits YOU in interviews.              │
+  │ with A-lister          │ "[Star] says 'This studio gets it. They let    │
+  │                        │ artists be artists.'" → Hype +5 next film.    │
+  │                        │                                                │
+  └───────────────────────┴────────────────────────────────────────────────┘
+
+  THE WES ANDERSON WALKOUT EXAMPLE (from your prompt):
+
+    Film 1: Player hires The Auteur. Auteur demands Final Cut.
+            Player DENIES the demand. Film is made. Auteur's grudge +1.
+
+    Film 2: Player hires The Auteur again. Auteur demands Final Cut again.
+            Connector: "Look, they're still sore about last time.
+            But they'll do it. Just... maybe give them what they want?"
+            Player DENIES again. Grudge now at +3.
+
+    Film 3: During production, WALKOUT CRISIS triggers.
+            Crisis card: "The Auteur has locked themselves in their
+            trailer. They're calling their agent. The crew is standing
+            around. You have 30 minutes before this costs you $200K."
+
+            Option A: "Give them Final Cut. End this."
+              → Quality +10, but Auteur gets Final Cut (future films
+                with this director always have +Q but unpredictable tone)
+
+            Option B: "Fire them. Promote the AD."
+              → Quality -15, but you're free. Auteur's grudge maxes out.
+                They will NEVER work with you again. Connector:
+                "That bridge isn't just burned. It's vaporized."
+
+  This is the Lionhead loop: TRACK → ACCUMULATE → SURPRISE.
+
+
+═══════════════════════════════════════════════════════════════════════════════════
+ §4  THE SUIT REMEMBERS — Budget Negotiation Memory
+═══════════════════════════════════════════════════════════════════════════════════
+
+  The Suit tracks your financial history and his dialogue shifts.
+
+  ┌───────────────────────┬────────────────────────────────────────────────┐
+  │ Player Pattern         │ Suit's Reaction                                │
+  ╞═══════════════════════╪════════════════════════════════════════════════╡
+  │                        │                                                │
+  │ Bluffed and caught     │ Film 2+: "Don't try that again. I check       │
+  │ (budget_bluff_fail)    │ the numbers now."                              │
+  │                        │ → Bluff success chance drops to 15% (from 65%) │
+  │                        │                                                │
+  │ Always picks Indie     │ Film 3+: "You never swing for the fences.     │
+  │ (3+ indie picks)       │ Shareholders are asking questions."            │
+  │                        │ → Reputation stagnates (can't grow past +5    │
+  │                        │   without at least one Studio budget)          │
+  │                        │                                                │
+  │ Last film was a flop   │ "After the last one? You're lucky I'm even    │
+  │                        │ taking this meeting."                          │
+  │                        │ → Studio requires 2 questions instead of 1     │
+  │                        │                                                │
+  │ Last film was a hit    │ "The board loved the returns. What do you      │
+  │                        │ need this time?"                               │
+  │                        │ → Blockbuster requires only 1 question         │
+  │                        │                                                │
+  │ 2 blockbusters in a    │ "At this point, you could ask for the moon.   │
+  │ row                    │ Don't make me regret saying that."             │
+  │                        │ → All budgets auto-approved                    │
+  │                        │                                                │
+  │ Budget was downgraded  │ "Remember when you asked for $120M and I      │
+  │ last time              │ gave you $60M? Let's not do that dance again." │
+  │                        │ → Blockbuster option hidden until next hit     │
+  │                        │                                                │
+  └───────────────────────┴────────────────────────────────────────────────┘
+
+
+═══════════════════════════════════════════════════════════════════════════════════
+ §5  THE STAR SYSTEM — No Bars, Just Stars
+═══════════════════════════════════════════════════════════════════════════════════
+
+  Status bars give away too much information. They let the player
+  min-max instead of FEEL. Stars are better because:
+
+  1. They change in DISCRETE STEPS (not smooth gradients)
+  2. The player can't tell exactly when a star will fill or empty
+  3. Multiple choices accumulate before a star changes
+  4. The "moment" a star changes carries emotional weight
+
+  IMPLEMENTATION:
+
+  ┌─────────────────────────────────────────────────────────────────────────┐
+  │                                                                         │
+  │  QUALITY: ★★★★☆     (4 out of 5 stars)                                │
+  │  HYPE:    ★★★☆☆     (3 out of 5 stars)                                │
+  │                                                                         │
+  │  Internal value: 0-100 (hidden from player)                             │
+  │  Star thresholds: 0-19 = ★☆☆☆☆                                        │
+  │                   20-39 = ★★☆☆☆                                        │
+  │                   40-59 = ★★★☆☆                                        │
+  │                   60-79 = ★★★★☆                                        │
+  │                   80+   = ★★★★★                                        │
+  │                                                                         │
+  │  The player sees stars. The engine tracks exact numbers.                │
+  │  A +5 quality bonus might not change the star count.                    │
+  │  Then a +3 bonus tips it over the threshold — feels big.               │
+  │  The player doesn't know the +5 was "wasted."                          │
+  │  They think the +3 was the one that mattered.                           │
+  │                                                                         │
+  │  DISPLAY:                                                               │
+  │  Stars are full or empty. No half-stars. No fill animation.             │
+  │  When a star changes, it POPS (scale 1 → 1.3 → 1, gold flash).        │
+  │  The old star dims. The new star ignites.                               │
+  │  This is the only feedback. No numbers shown during production.         │
+  │                                                                         │
+  │  REVEAL:                                                                │
+  │  The exact quality/hype numbers are only shown at PREMIERE.             │
+  │  During production, you're flying blind-ish.                            │
+  │  You know "roughly 3 stars" but not "is it 40 or 58?"                  │
+  │                                                                         │
+  └─────────────────────────────────────────────────────────────────────────┘
+
+
+═══════════════════════════════════════════════════════════════════════════════════
+ §6  THE COMBINED LOT — Universal Studios Layout
+═══════════════════════════════════════════════════════════════════════════════════
+
+  Instead of separate LOT and PARK screens, they're ONE place.
+  Like the real Universal Studios, where the backlot IS the park.
+  The studio grew, the park grew around it. They're inseparable.
+
+  LAYOUT: 2×4 horizontal grid, landscape orientation.
+  Studio and Park are the two CENTER FRONT squares.
+  Six empty squares frame them like a mountainside.
+
+  ┌─────────────────────────────────────────────────────────────────────────┐
+  │                                                                         │
+  │  BIRD'S EYE VIEW (what the player sees):                                │
+  │                                                                         │
+  │       ⛰️                                          ⛰️                   │
+  │     ⛰️⛰️    ┌────────┐┌────────┐┌────────┐┌────────┐  ⛰️⛰️            │
+  │    ⛰️⛰️⛰️  │  PLOT  ││  PLOT  ││  PLOT  ││  PLOT  │  ⛰️⛰️⛰️          │
+  │   ⛰️⛰️⛰️⛰ │   5    ││   6    ││   7    ││   8    │ ⛰️⛰️⛰️⛰️         │
+  │   ☁️      └────────┘└────────┘└────────┘└────────┘        ☁️         │
+  │           ┌────────┐┌────────┐┌────────┐┌────────┐                    │
+  │    🌲🌲   │  PLOT  ││STUDIO ││ PARK   ││  PLOT  │   🌲🌲             │
+  │   🌲🌲🌲  │   1    ││ HOME  ││ GATE   ││   4    │  🌲🌲🌲            │
+  │           └────────┘└────────┘└────────┘└────────┘                    │
+  │   ═══════════════════════════════════════════════════                  │
+  │              PACIFIC DREAMS STUDIOS & RESORT                           │
+  │                    ★★★★☆ Quality  ★★★☆☆ Hype                         │
+  │                                                                         │
+  └─────────────────────────────────────────────────────────────────────────┘
+
+  THE 8 PLOTS:
+
+  ┌──────┬────────────────────────┬────────────────────────────────────────┐
+  │ Plot │ Starting State          │ Can Become                             │
+  ╞══════╪════════════════════════╪════════════════════════════════════════╡
+  │  1   │ Empty (mountainside)    │ Studio building OR Theme park ride    │
+  │  2   │ STUDIO HOME (permanent) │ Upgradeable: Garage → HQ → Campus    │
+  │  3   │ PARK GATE (permanent)   │ Upgradeable: Gate → Plaza → Resort   │
+  │  4   │ Empty (mountainside)    │ Studio building OR Theme park ride    │
+  │  5   │ Empty (mountainside)    │ Studio building OR Theme park ride    │
+  │  6   │ Empty (mountainside)    │ Studio building OR Theme park ride    │
+  │  7   │ Empty (mountainside)    │ Studio building OR Theme park ride    │
+  │  8   │ Empty (mountainside)    │ Studio building OR Theme park ride    │
+  ╞══════╪════════════════════════╪════════════════════════════════════════╡
+  │      │                         │                                        │
+  │  KEY TENSION: 6 open plots.   │  But there are 8 possible buildings    │
+  │  You can't build everything.  │  AND rides compete for the same plots. │
+  │  Every plot is a choice.      │  "Do I build a VFX Lab or a roller     │
+  │                                │  coaster from my hit horror film?"     │
+  │                                │                                        │
+  └──────┴────────────────────────┴────────────────────────────────────────┘
+
+  THE MOUNTAINTOP FRAMING:
+
+  Mountains, trees, and clouds frame the grid.
+  As the studio grows, the landscape changes:
+
+    Film 1-2:  Wild mountainside. Trees everywhere. Dirt road.
+               Feels like you're building in the middle of nowhere.
+
+    Film 3-4:  Road paves. Power lines appear. A few buildings exist.
+               Feels like progress. Still scrappy.
+
+    Film 5-6:  Hollywood sign visible in background. Palm trees.
+               Studio lot is filled. Park rides are running.
+               Feels like you've MADE IT.
+
+    Film 7+:   Full resort. Lit up at night (if game time advances).
+               Feels like a legacy.
+
+  This is COSMETIC — driven by total plot count, not game logic.
+  But it makes the world feel alive and responsive.
+
+  BUILDING CONSOLIDATION (from 9 buildings to 8 possible):
+
+  Instead of 9 separate buildings, we streamline:
+
+  ┌─────────────────────────┬──────────────────────────────────────────────┐
+  │ Building                │ What It Does (simplified)                    │
+  ╞═════════════════════════╪══════════════════════════════════════════════╡
+  │ 🏗️ STUDIO HOME          │ Permanent. Center front. Your HQ.           │
+  │ (Plot 2, can't remove) │ Upgrades: Garage → Indie HQ → Major Studio  │
+  │                         │ Each level: +1 star capacity, better talent  │
+  ├─────────────────────────┼──────────────────────────────────────────────┤
+  │ 🎢 PARK GATE             │ Permanent. Center front. Park entrance.     │
+  │ (Plot 3, can't remove) │ Upgrades: Gate → Plaza → Resort             │
+  │                         │ Each level: +1 ride capacity, more income    │
+  ├─────────────────────────┼──────────────────────────────────────────────┤
+  │ ✍️ Writers Bungalow      │ Unlocks 3rd pitch option + quality bonus    │
+  │ 🎬 Sound Stage          │ Unlocks Blockbuster budgets                 │
+  │ 🌟 Casting Office       │ Unlocks A-List talent                       │
+  │ 🔬 VFX Lab              │ Unlocks Sci-Fi genre                        │
+  │ 📺 Marketing Suite      │ Hype bonus each film                        │
+  │ 🎞️ Post House           │ Quality bonus each film                     │
+  │ 🍕 Commissary           │ Reduces crisis severity                     │
+  │ 🏗️ Backlot              │ Bonus to specific genres                    │
+  │                         │                                              │
+  │ That's 8 possible       │ But only 6 open plots.                      │
+  │ buildings on 6 plots.   │ You MUST choose. Can't have everything.     │
+  │                         │                                              │
+  │ AND rides compete for   │ A ride on Plot 5 means no building there.   │
+  │ the same plots.         │ Buildings boost QUALITY. Rides boost INCOME. │
+  │                         │ Classic tycoon tension.                      │
+  └─────────────────────────┴──────────────────────────────────────────────┘
+
+  RIDES (placed on empty plots, from successful films):
+
+  When a film is a HIT or BLOCKBUSTER, you can build a ride from it.
+  The ride occupies one plot permanently (unless demolished).
+  Rides generate passive income between films.
+  Adjacent rides with synergy genres get bonuses.
+
+
+═══════════════════════════════════════════════════════════════════════════════════
+ §7  THE SCRIPTED FIRST GAME — A Guided Experience
+═══════════════════════════════════════════════════════════════════════════════════
+
+  The first playthrough is tightly scripted. Not a tutorial —
+  a STORY. The player feels like they're making choices, but
+  we're controlling the pacing and ensuring specific moments hit.
+
+  ┌─────────────────────────────────────────────────────────────────────────┐
+  │                                                                         │
+  │  FILM 1: "THE GARAGE MOVIE"                                            │
+  │  ─────────────────────────────────────────────                          │
+  │  Budget: Indie only (Studio/Blockbuster locked)                         │
+  │  Talent: C-List and No-Names only (A/B-List locked)                     │
+  │  Market: 1 genre is HOT (rigged to give a clear signal)                │
+  │                                                                         │
+  │  Purpose: Teach the basics. Genre → Pitch → Budget → Cast → Go.        │
+  │  The Numbers Girl walks you through each step.                          │
+  │  The Suit auto-approves Indie budget with no questions.                │
+  │  The Connector presents only 3 cheap options per role.                  │
+  │                                                                         │
+  │  GUARANTEED OUTCOME: Modest Hit or Cult Classic.                        │
+  │  (We rig the numbers so Film 1 can't be a total flop.)                 │
+  │  Player earns ~$30-50K profit. Enough to buy ONE building.             │
+  │                                                                         │
+  │  POST-FILM: Numbers Girl says "Not bad for a garage. But if you        │
+  │  want to play with the big kids, you'll need better facilities."        │
+  │  → Player sees lot. 6 empty plots. Can afford exactly 1 building.      │
+  │  → This is the FIRST REAL CHOICE. Which building do you buy?           │
+  │  → This choice is TRACKED and will be referenced Film 3+.              │
+  │                                                                         │
+  │                                                                         │
+  │  FILM 2: "THE SOPHOMORE"                                               │
+  │  ─────────────────────────────────────────────                          │
+  │  Budget: Indie + Studio unlocked (if Sound Stage exists)                │
+  │  Talent: B-List now available (if Casting Office exists)                │
+  │  Market: 2 HOT genres now (more options)                                │
+  │                                                                         │
+  │  Purpose: Introduce the Suit's negotiation.                             │
+  │  If player picks Studio, they face their first question.                │
+  │  The answer MATTERS — and the Suit remembers.                           │
+  │                                                                         │
+  │  KEY MOMENT: A B-List talent makes a small demand.                      │
+  │  Nothing huge. "Can I bring my own cinematographer?"                    │
+  │  Accept or deny — this is the SEED for the loyalty/grudge system.      │
+  │  The player won't realize this matters until Film 4+.                  │
+  │                                                                         │
+  │                                                                         │
+  │  FILM 3: "THE PROVING GROUND"                                          │
+  │  ─────────────────────────────────────────────                          │
+  │  Budget: All tiers available (if buildings support it)                   │
+  │  Talent: A-List now available (if Casting Office exists)                │
+  │  Market: Normal randomization                                           │
+  │                                                                         │
+  │  Purpose: First REAL risk. A-Listers have demands.                      │
+  │  Blockbuster budget requires convincing the Suit.                       │
+  │  Chemistry system activates.                                            │
+  │                                                                         │
+  │  THE CALLBACK: The Suit references Film 1's building choice:            │
+  │  "You put your first dollar into [building]. That tells me              │
+  │  something about who you are as a studio head."                         │
+  │                                                                         │
+  │  If player built Writers Bungalow first → "You're a story person.      │
+  │    I respect that. But stories don't pay shareholders."                 │
+  │  If player built Marketing first → "You understand buzz.               │
+  │    But can you back it up with substance?"                              │
+  │  If player built Sound Stage first → "You think big.                   │
+  │    I like that. Just make sure the big isn't bigger than the box."     │
+  │                                                                         │
+  │                                                                         │
+  │  FILM 4: "THE REPUTATION FILM"                                         │
+  │  ─────────────────────────────────────────────                          │
+  │  Everything is unlocked. Training wheels fully off.                     │
+  │                                                                         │
+  │  KEY MOMENT: If the player denied a talent's demand in Film 2,         │
+  │  that talent shows up again with INCREASED demands.                    │
+  │  Connector: "They said they'll do it... but the price went up.         │
+  │  Something about 'respect.' Their word, not mine."                     │
+  │                                                                         │
+  │  If the player ACCEPTED the demand in Film 2, the talent is            │
+  │  cheaper and friendlier: "They specifically asked to work with         │
+  │  you again. Said you 'get it.'"                                        │
+  │                                                                         │
+  │                                                                         │
+  │  FILM 5: "THE CRISIS"                                                  │
+  │  ─────────────────────────────────────────────                          │
+  │  A WALKOUT crisis can trigger if grudge conditions are met.             │
+  │  Park rides are now generating income.                                  │
+  │  The lot/park tension is real: 6 plots, many demands.                  │
+  │                                                                         │
+  │  THE CALLBACK: Numbers Girl references your genre pattern:             │
+  │  If 3+ same genre → "You've become the [genre] studio.                │
+  │    The audience expects it now. That's a blessing and a curse."         │
+  │  If all different → "You've never made the same thing twice.           │
+  │    Bold. But the audience doesn't know what to expect from you."       │
+  │                                                                         │
+  │                                                                         │
+  │  FILM 6-7: "THE LEGACY"                                                │
+  │  ─────────────────────────────────────────────                          │
+  │  Full sandbox. All systems active.                                      │
+  │  Talent relationships fully mature.                                     │
+  │  Park generates significant income.                                     │
+  │  Stars on the lot reflect the player's choices.                         │
+  │                                                                         │
+  │  ENDGAME: After Film 7, a final score screen:                           │
+  │  "THE LEGACY OF [STUDIO NAME]"                                         │
+  │  Summary of all films, all buildings, all relationships.                │
+  │  What kind of studio head were you?                                     │
+  │  → "The Auteur" (prioritized quality)                                  │
+  │  → "The Mogul" (prioritized money)                                     │
+  │  → "The People's Champion" (prioritized hype)                          │
+  │  → "The Gambler" (took the most risks)                                 │
+  │  → "The Loyalist" (kept rehiring the same people)                      │
+  │  → "The Shark" (denied every demand, squeezed every dollar)            │
+  │                                                                         │
+  └─────────────────────────────────────────────────────────────────────────┘
+
+  BEATABLE IN ONE SITTING:
+
+  7 films × ~3-5 minutes each = 21-35 minutes.
+  Plus lot/park management between films = ~40-50 minutes total.
+  That's a lunch break. That's a commute. That's one sitting.
+
+
+═══════════════════════════════════════════════════════════════════════════════════
+ §8  THE DIALOGUE ENGINE — How NPCs Reference History
+═══════════════════════════════════════════════════════════════════════════════════
+
+  Every NPC dialogue line has two parts:
+    1. BASE LINE — the generic version
+    2. MEMORY OVERRIDE — a version that references history
+
+  The dialogue system checks the Memory Ledger FIRST.
+  If it finds a relevant, unsurfaced memory, it uses the override.
+  Then it marks that memory as surfaced: true.
+
+  STRUCTURE:
+
+  function getDialogue(character, context, ledger) {
+    // 1. Check for unsurfaced memories relevant to this context
+    const memories = ledger.filter(m =>
+      !m.surfaced &&
+      m.actor === relevantActor &&
+      MEMORY_TRIGGERS[context]?.includes(m.tag)
+    );
+
+    // 2. If memory found, use the memory-aware line
+    if (memories.length > 0) {
+      const memory = memories[0];
+      memory.surfaced = true;
+      return MEMORY_LINES[character][memory.tag](memory);
+    }
+
+    // 3. Otherwise, use the generic line
+    return pick(BASE_LINES[character][context]);
+  }
+
+  EXAMPLE MEMORY LINES:
+
+  ┌─────────────────────────────────────────────────────────────────────────┐
+  │                                                                         │
+  │  THE CONNECTOR — Talent Agent                                           │
+  │                                                                         │
+  │  demand_denied (re: The Auteur, final_cut):                             │
+  │    Film 2: "Word on the street — The Auteur's still talking about      │
+  │             how you wouldn't give up final cut. Just a heads up."       │
+  │    Film 3: "The Auteur's agent called. They want final cut in writing  │
+  │             before they'll even READ the script."                       │
+  │    Film 4: "Look, about The Auteur. They told me to tell you —        │
+  │             direct quote — 'I'd rather shoot a commercial.'"           │
+  │                                                                         │
+  │  demand_accepted (re: The Movie Star, top_billing):                     │
+  │    Film 2: "The Movie Star's people called. They want you to know      │
+  │             they 'appreciated the respect.' Translation: they'll       │
+  │             take your call."                                            │
+  │    Film 3: "Good news — The Movie Star told Vanity Fair you're        │
+  │             'one of the good ones.' That's basically a discount."      │
+  │                                                                         │
+  │  THE SUIT — CFO                                                         │
+  │                                                                         │
+  │  budget_bluff_fail:                                                     │
+  │    "Last time you told me the competition had nothing this quarter.    │
+  │     I checked. Three tentpoles opened the same week. Don't do that    │
+  │     again."                                                             │
+  │                                                                         │
+  │  film_flop (previous):                                                  │
+  │    "After [PREVIOUS FILM TITLE], I've got shareholders asking         │
+  │     questions. Make this one count."                                    │
+  │                                                                         │
+  │  THE NUMBERS GIRL — Head of Development                                │
+  │                                                                         │
+  │  genre_repeated:                                                        │
+  │    "Another [genre]? I'm not saying it won't work, but the market     │
+  │     might be getting tired of us. Sequel fatigue is real."             │
+  │                                                                         │
+  │  genre_cold_pick (Film 1):                                             │
+  │    "Remember your first film? You went against the market on           │
+  │     [genre] and it [worked/didn't work]. You've always been a         │
+  │     [gutsy/cautious] one."                                             │
+  │                                                                         │
+  └─────────────────────────────────────────────────────────────────────────┘
+
+
+═══════════════════════════════════════════════════════════════════════════════════
+ §9  THE STORE CHANGES — What We Need to Add
+═══════════════════════════════════════════════════════════════════════════════════
+
+  store.js additions:
+
+  {
+    // ── EXISTING ──
+    funds: 0,
+    reputation: 0,
+    history: [],          // completed films
+    phase: 'title',
+
+    // ── NEW: MEMORY LEDGER ──
+    ledger: [],           // array of memory entries (see §2)
+
+    // ── NEW: TALENT RELATIONS ──
+    talentRelations: {},  // archetype → { loyalty, grudge, timesHired, ... }
+
+    // ── NEW: COMBINED LOT/PARK ──
+    plots: [
+      null,               // Plot 1: empty
+      { type:'studio', building:'garage', level:1 },  // Plot 2: STUDIO HOME
+      { type:'park', building:'gate', level:1 },       // Plot 3: PARK GATE
+      null,               // Plot 4: empty
+      null,               // Plot 5: empty
+      null,               // Plot 6: empty
+      null,               // Plot 7: empty
+      null,               // Plot 8: empty
+    ],
+
+    // ── NEW: DERIVED STATS ──
+    playStyle: null,      // computed from ledger patterns
+    filmNumber: 0,        // how many films completed
+    isFirstGame: true,    // scripted mode flag
+
+    // ── NEW: ACTIONS ──
+    logMemory: (entry) => ...,
+    updateTalentRelation: (archetype, deltas) => ...,
+    buildOnPlot: (plotIndex, buildingOrRide) => ...,
+    demolishPlot: (plotIndex) => ...,
+  }
+
+
+═══════════════════════════════════════════════════════════════════════════════════
+ §10  DELAYED CONSEQUENCE TRIGGERS — The "Oh Shit" Moments
+═══════════════════════════════════════════════════════════════════════════════════
+
+  These are moments where past choices surface unexpectedly.
+  The player makes a choice in Film 2 and doesn't think about it.
+  In Film 4, it comes back.
+
+  ┌──────────────────────────────────────────────────────────────────────────┐
+  │                                                                          │
+  │  TRIGGER: demand_denied × 2 (same talent)                               │
+  │  EFFECT:  WALKOUT crisis card during production                          │
+  │  WHEN:    Film 3+ if talent hired with active grudge ≥ 3                │
+  │  FEEL:    "Oh no. They actually remembered."                             │
+  │                                                                          │
+  │  ──────────────────────────────────────────────────                      │
+  │                                                                          │
+  │  TRIGGER: budget_bluff_fail (any film)                                   │
+  │  EFFECT:  Suit's bluff detection permanently increased                   │
+  │  WHEN:    Next film's negotiation                                        │
+  │  FEEL:    "He doesn't trust me anymore."                                 │
+  │                                                                          │
+  │  ──────────────────────────────────────────────────                      │
+  │                                                                          │
+  │  TRIGGER: genre_streak ≥ 3 (same genre)                                 │
+  │  EFFECT:  Numbers Girl warns of "brand fatigue"                          │
+  │           Quality bonus for that genre drops from +15 to +5 (HOT)       │
+  │  WHEN:    Film 4+ market research phase                                  │
+  │  FEEL:    "I've been typecast as a studio."                              │
+  │                                                                          │
+  │  ──────────────────────────────────────────────────                      │
+  │                                                                          │
+  │  TRIGGER: all_star_cast + film_flop                                      │
+  │  EFFECT:  Press headline: "$$$ Can't Buy Talent"                        │
+  │           Reputation -3 (big hit)                                        │
+  │           A-List talent more likely to refuse next film                  │
+  │  WHEN:    Premiere of the flop                                           │
+  │  FEEL:    "I spent everything and it didn't matter."                     │
+  │                                                                          │
+  │  ──────────────────────────────────────────────────                      │
+  │                                                                          │
+  │  TRIGGER: brother_in_law hired + film_blockbuster                        │
+  │  EFFECT:  Press headline: "From Garage to Glory"                        │
+  │           Reputation +3 (underdog bonus)                                 │
+  │           Brother-in-Law becomes C-List (permanently upgraded)          │
+  │  WHEN:    Premiere                                                       │
+  │  FEEL:    "Holy shit, he actually pulled it off."                        │
+  │                                                                          │
+  │  ──────────────────────────────────────────────────                      │
+  │                                                                          │
+  │  TRIGGER: moms_friend hired + film_flop                                  │
+  │  EFFECT:  Numbers Girl: "Your mother called. She's... disappointed."    │
+  │           No mechanical penalty. Pure emotional damage.                  │
+  │  WHEN:    Post-premiere, lot phase                                       │
+  │  FEEL:    "Even my mom knows."                                           │
+  │                                                                          │
+  │  ──────────────────────────────────────────────────                      │
+  │                                                                          │
+  │  TRIGGER: talent_rehired × 3 (same talent, any role)                    │
+  │  EFFECT:  "MUSE" status: permanent +5 quality when working together     │
+  │           Connector: "You two are like Scorsese and De Niro."           │
+  │  WHEN:    Casting phase, Film 4+                                         │
+  │  FEEL:    "We have a thing. The audience sees it."                       │
+  │                                                                          │
+  │  ──────────────────────────────────────────────────                      │
+  │                                                                          │
+  │  TRIGGER: ride_demolished (any film's ride)                              │
+  │  EFFECT:  If the film's director or star still has loyalty > 0:         │
+  │           "You tore down the [Film Title] ride? [Talent] heard.         │
+  │           They're... not happy." → Loyalty -2                           │
+  │  WHEN:    Next film's casting phase                                      │
+  │  FEEL:    "Wait, they cared about the RIDE?"                             │
+  │                                                                          │
+  └──────────────────────────────────────────────────────────────────────────┘
+
+
+═══════════════════════════════════════════════════════════════════════════════════
+ §11  NEWS TICKER / PVM INTEGRATION — The World Reacts
+═══════════════════════════════════════════════════════════════════════════════════
+
+  The PVM monitor becomes the game's NEWSPAPER.
+  Between beats, during transitions, and on the lot screen,
+  the PVM shows contextual "news" generated from the Memory Ledger.
+
+  ┌─────────────────────────────────────────────────────────────────────────┐
+  │                                                                         │
+  │  PVM NEWS EXAMPLES (generated from ledger entries):                     │
+  │                                                                         │
+  │  After a HIT:                                                           │
+  │  "Pacific Dreams does it again! '[Film Title]' opens #1"               │
+  │                                                                         │
+  │  After a FLOP:                                                          │
+  │  "Trouble at Pacific Dreams? '[Title]' bombs opening weekend"          │
+  │                                                                         │
+  │  After denying A-List demand:                                           │
+  │  "Sources say [Talent] 'not pleased' with Pacific Dreams deal"         │
+  │                                                                         │
+  │  After accepting A-List demand:                                         │
+  │  "[Talent] praises Pacific Dreams: 'They let artists work'"            │
+  │                                                                         │
+  │  After building Sound Stage:                                            │
+  │  "Pacific Dreams expands! New sound stage signals bigger ambitions"     │
+  │                                                                         │
+  │  After 3 same-genre films:                                              │
+  │  "Is Pacific Dreams becoming the '[Genre] Studio'?"                    │
+  │                                                                         │
+  │  After hiring Brother-in-Law:                                           │
+  │  "Pacific Dreams faces scrutiny over 'nepotism hire'"                  │
+  │                                                                         │
+  │  After Brother-in-Law blockbuster:                                      │
+  │  "From wedding videos to blockbusters: the [BIL] story"               │
+  │                                                                         │
+  └─────────────────────────────────────────────────────────────────────────┘
+
+
+═══════════════════════════════════════════════════════════════════════════════════
+ §12  IMPLEMENTATION PRIORITY — What Changes from Current Build
+═══════════════════════════════════════════════════════════════════════════════════
+
+  ┌──────┬───────────────────────────────────────┬───────────────────────────┐
+  │ Pri  │ Task                                  │ Impact                    │
+  ╞══════╪═══════════════════════════════════════╪═══════════════════════════╡
+  │      │                                       │                           │
+  │  1   │ Memory Ledger in store.js              │ Foundation for everything │
+  │      │ logMemory() action                     │ ~40 lines                 │
+  │      │ Flat array, simple objects             │                           │
+  │      │                                       │                           │
+  │  2   │ Talent Relations in store.js           │ Grudge/loyalty system     │
+  │      │ updateTalentRelation() action          │ ~60 lines                 │
+  │      │ Per-archetype persistent state         │                           │
+  │      │                                       │                           │
+  │  3   │ Combined Lot/Park grid                 │ Replaces 2 screens        │
+  │      │ 2×4 horizontal layout                  │ with 1 unified view       │
+  │      │ Mountain/tree framing                  │ ~400 lines new component  │
+  │      │ plots[] array in store                 │                           │
+  │      │                                       │                           │
+  │  4   │ Star display system                    │ Replaces all stat bars    │
+  │      │ Hidden values → 5-star display         │ ~30 lines utility         │
+  │      │ Pop animation on threshold cross       │                           │
+  │      │                                       │                           │
+  │  5   │ Dialogue engine with memory checks     │ Makes NPCs feel alive    │
+  │      │ getDialogue() function                 │ ~100 lines                │
+  │      │ Memory-aware line overrides            │ + dialogue data           │
+  │      │                                       │                           │
+  │  6   │ Scripted first game flags              │ Pacing for new players   │
+  │      │ isFirstGame + filmNumber checks        │ ~50 lines of conditions   │
+  │      │ Rigged Film 1 outcomes                 │                           │
+  │      │                                       │                           │
+  │  7   │ Delayed consequence triggers           │ The "oh shit" moments    │
+  │      │ checkConsequences() each phase          │ ~120 lines               │
+  │      │ WALKOUT, MUSE, press headlines          │                          │
+  │      │                                       │                           │
+  │  8   │ PVM news generator                     │ World feels reactive     │
+  │      │ generateNews(ledger) function          │ ~80 lines                 │
+  │      │                                       │                           │
+  │  9   │ Endgame legacy screen                  │ Satisfying conclusion    │
+  │      │ Play style derivation                  │ ~200 lines component     │
+  │      │ Film-by-film retrospective             │                           │
+  │      │                                       │                           │
+  └──────┴───────────────────────────────────────┴───────────────────────────┘
+
+  TOTAL NEW CODE: ~1,100 lines
+  TOTAL REPLACED: StudioLot.jsx + ThemePark.jsx → CombinedLot.jsx
+  MODIFIED: PreProduction.jsx (add memory logging + dialogue engine)
+            Production.jsx (add walkout crisis + memory logging)
+            Premiere.jsx (add consequence triggers + news gen)
+            store.js (add ledger, talentRelations, plots)
+
+
+═══════════════════════════════════════════════════════════════════════════════════
+ §13  THE MAGIC MOMENT — Why This Works
+═══════════════════════════════════════════════════════════════════════════════════
+
+  Film 1: Player hires Your Brother-in-Law as director.
+          Player thinks: "Haha, cheapest option, whatever."
+          We track: { tag:'brother_in_law', film:1, sentiment:0 }
+
+  Film 2: Connector mentions it offhand:
+          "Your brother-in-law called. He wants to do another one.
+           Something about 'proving himself.' His words."
+          Player thinks: "Oh, that's a nice touch."
+
+  Film 3: Player hires him again. He's still cheap.
+          Player thinks: "Easy choice for my low-budget film."
+          We track: { tag:'talent_rehired', actor:'BIL', timesHired:2 }
+
+  Film 4: Player hires him a THIRD time.
+          Connector: "Three films together. You know what that makes
+          him? Your MUSE. Scorsese had De Niro. Spielberg had Hanks.
+          You have... your wife's brother. But hey, it's working."
+
+          MUSE STATUS UNLOCKED: permanent +5 quality.
+
+  Film 5: The Brother-in-Law film becomes a BLOCKBUSTER.
+          PVM News: "FROM GARAGE TO GLORY: How a wedding videographer
+          became Hollywood's most unlikely auteur"
+
+          Brother-in-Law permanently upgraded from No-Name to C-List.
+          His quality stat goes from 2 to 8.
+
+  Film 6: A-List talent references the Brother-in-Law:
+          "I saw what you did with [BIL's film]. If you can make HIM
+          look good, imagine what you can do with ME."
+          → A-List talent MORE likely to accept your projects.
+
+  This is ONE chain. From ONE throwaway choice in Film 1.
+  The player didn't plan any of this. It EMERGED from tracking.
+  That's the Lionhead feeling.
+
+
+╔══════════════════════════════════════════════════════════════════════════════════╗
+║                                                                                  ║
+║   Ready to start building.                                                       ║
+║   Say the word and I'll begin with the Memory Ledger + Talent Relations          ║
+║   in store.js, then the Combined Lot component.                                  ║
+║                                                                                  ║
+╚══════════════════════════════════════════════════════════════════════════════════╝

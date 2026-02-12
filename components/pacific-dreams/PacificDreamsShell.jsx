@@ -56,7 +56,7 @@ function StudioHeader() {
             color: funds >= 0 ? COLORS.green : COLORS.red,
             marginTop: 2,
           }}>
-            {funds >= 0 ? '+' : ''}{(funds / 1_000_000).toFixed(1)}M
+            {funds >= 1e9 ? `$${(funds / 1e9).toFixed(1)}B` : funds >= 1e6 ? `$${(funds / 1e6).toFixed(0)}M` : funds >= 1e3 ? `$${(funds / 1e3).toFixed(0)}K` : `$${funds}`}
           </div>
         )}
       </div>

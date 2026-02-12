@@ -1,0 +1,1278 @@
+╔══════════════════════════════════════════════════════════════════════════════════╗
+║                                                                                  ║
+║   BACKLOT MOGUL — THE MASTER SCRIPT                                             ║
+║   "A Boston kid with an Oscar and a death wish"                                  ║
+║                                                                                  ║
+║   Complete character bible, dialogue bank, plot architecture,                     ║
+║   and narrative branching for every playable moment.                              ║
+║                                                                                  ║
+╚══════════════════════════════════════════════════════════════════════════════════╝
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+ PART ONE: THE WORLD
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+
+═══════════════════════════════════════════════════════════════════════════════════
+ §1  THE PREMISE
+═══════════════════════════════════════════════════════════════════════════════════
+
+  In another life, he married the singer. Bought the mansion.
+  Did the tabloid dance. Got comfortable.
+
+  In THIS life, he stayed hungry.
+
+  The year is ambiguous — somewhere in a version of Hollywood that
+  feels like now but isn't quite. A screenwriter from Dorchester
+  who won an Oscar at 25 for a script he wrote on napkins at
+  Dunkin' Donuts has spent the last decade watching other people
+  make his words worse. He's directed a few films. Some good.
+  One that got him taken seriously. But directing isn't enough.
+  He doesn't want to make ONE good movie. He wants to make the
+  PLACE where good movies come from.
+
+  He's bought a bankrupt studio lot in the hills above Burbank.
+  It's a dump. One soundstage that leaks. A garage where someone
+  was definitely living. A view of the valley that, on a clear day,
+  makes you understand why people came here in the first place.
+
+  The trades think he's lost his mind. The streamers think he's
+  irrelevant. His mother thinks he should come home to Boston.
+  His best friend thinks he's a genius.
+
+  He's going to build Pacific Dreams Studios.
+  Or he's going to go broke trying.
+
+  TONE:
+  - Funny but not a comedy. Warm but not soft.
+  - The humor comes from characters who are sharp, self-aware,
+    and trapped in an absurd industry they genuinely love.
+  - Think: the dialogue energy of Entourage meets the heart
+    of Ted Lasso meets the structural ambition of Fable.
+  - The player should LIKE these people. Even the antagonists.
+  - Boston authenticity matters. He says "wicked." He drops his
+    R's when he's stressed. His loyalty is irrational and total.
+
+
+═══════════════════════════════════════════════════════════════════════════════════
+ §2  THE PROTAGONIST — "THE KID FROM DORCHESTER"
+═══════════════════════════════════════════════════════════════════════════════════
+
+  NAME: Not named. Referred to by others as "Boss," "Chief,"
+        "Kid" (by the Suit), "Sweetheart" (by the Connector).
+        The player IS the protagonist. Second person always.
+
+  BACKSTORY (revealed through NPC dialogue across films):
+
+  - Grew up in Dorchester, MA. Triple-decker apartment.
+  - Mom still lives there. Calls every Sunday.
+  - Won Best Original Screenplay at 25 with his best friend.
+    (The friend stayed in Boston. More on him later.)
+  - Directed three films. The third one — a crime drama set in
+    Southie — got him taken seriously as more than a writer.
+  - Spent his 30s doing uncredited rewrites for studios.
+    Made money. Lost his soul. Watched directors butcher his pages.
+  - At some point, something broke. He decided: if they won't
+    make movies right, I'll build a place that does.
+  - Used every dollar from the rewrite years to buy the lot.
+  - Has exactly enough money to make one terrible movie.
+  - If that movie flops, he's done. Back to Boston.
+
+  THE PLAYER'S RELATIONSHIP TO THE PROTAGONIST:
+  - The player makes the protagonist's decisions.
+  - But the protagonist has opinions. NPCs reference what
+    "you" did, but they also reference who "you" are.
+  - The protagonist's Boston identity bleeds through:
+    loyalty is everything, grudges are forever, family is
+    complicated, and the underdog chip never comes off.
+
+  WHAT THE PLAYER NEVER SEES:
+  - The protagonist's face. No portrait. No mirror scene.
+  - The protagonist's name. It's always "you."
+  - This is deliberate. The player fills in the blank.
+
+
+═══════════════════════════════════════════════════════════════════════════════════
+ §3  THE BEST FRIEND — DANNY SULLIVAN
+═══════════════════════════════════════════════════════════════════════════════════
+
+  Danny is the co-writer of the Oscar-winning script.
+  He took his half of the money, went back to Boston, bought a
+  bar in Southie, and never wrote another word. He's the happiest
+  person in this story. He's also the protagonist's conscience.
+
+  Danny doesn't appear as a gameplay NPC. He appears on the PVM
+  monitor as TEXT MESSAGES and VOICEMAILS between films. He's the
+  Greek chorus. The audience surrogate. The guy who says what
+  the player is thinking.
+
+  Danny's function: EMOTIONAL ANCHOR. He reminds the player (and
+  the protagonist) where they came from, what matters, and that
+  Hollywood is fundamentally insane.
+
+  ┌─────────────────────────────────────────────────────────────────────────┐
+  │  DANNY SULLIVAN                                                         │
+  │  Age: Same as protagonist                                               │
+  │  Location: Southie, Boston                                              │
+  │  Occupation: Bar owner ("Sullivan's")                                   │
+  │  Icon: 🍺                                                              │
+  │  Communication: Text messages on PVM between films                      │
+  │                                                                         │
+  │  VOICE:                                                                 │
+  │  - Wicked smart but pretends he isn't                                   │
+  │  - Swears casually, never cruelly                                       │
+  │  - Proud of you but would rather die than say it directly               │
+  │  - Makes fun of Hollywood constantly                                    │
+  │  - Watches every single one of your movies opening weekend              │
+  │  - Your mom asks him about you. He lies to protect you.                 │
+  │                                                                         │
+  │  CADENCE:                                                               │
+  │  Short sentences. Sentence fragments. Never uses your name.             │
+  │  Occasionally starts a thought and doesn't finish it.                   │
+  │  Uses "kid" even though you're the same age.                            │
+  │                                                                         │
+  └─────────────────────────────────────────────────────────────────────────┘
+
+  DANNY'S MESSAGES — Complete Bank:
+
+  ── FILM 1 (Before) ──
+  "So you actually did it. Bought a studio. In California.
+   Your mother's gonna kill you."
+
+  "The bar's fine. Pipe burst last week but Mikey fixed it.
+   Don't worry about us. Go make your movie."
+
+  ── FILM 1 (After — Modest Hit) ──
+  "Saw the numbers. Not bad. Not great. But not bad.
+   Couple guys at the bar said they liked it.
+   They were lying but it was nice of them."
+
+  ── FILM 1 (After — Cult Classic) ──
+  "So nobody went but the people who went loved it.
+   Story of your life, kid."
+
+  ── FILM 2 (Before) ──
+  "Your mom saw something in the trades about you 'expanding.'
+   She asked me what that means. I told her you're building
+   a swimming pool. She believed me."
+
+  ── FILM 2 (After — Hit) ──
+  "Alright. Alright alright alright.
+   Don't let it go to your head.
+   Actually, do. You've earned it."
+
+  ── FILM 2 (After — Flop) ──
+  "Hey. It happens. Remember that thing we wrote in college
+   that we thought was genius? The one about the talking dog?
+   THIS was better than that. You're fine."
+
+  ── FILM 3 (Before — Streamer introduced) ──
+  "Some kid with a YouTube channel is making movies now?
+   That's what we're competing with?
+   Jesus Christ, the industry really is over."
+
+  ── FILM 3 (After — Hit, player ahead of Streamer) ──
+  "You're beating the internet kid.
+   I don't know what that means but I'm proud of you."
+
+  ── FILM 3 (After — Flop, Streamer ahead) ──
+  "So the YouTube kid is winning.
+   That's... that's fine. That's totally fine.
+   [typing indicator]
+   [typing indicator]
+   It's not fine."
+
+  ── FILM 4 (Before, if player has rehired same talent) ──
+  "Heard you're working with [talent] again.
+   That's good. Loyalty matters.
+   Speaking of loyalty, you missed three Sundays."
+
+  ── FILM 4 (Before, if player denied demands repeatedly) ──
+  "Word gets around even in Boston.
+   People are saying you're 'difficult.'
+   I said 'you should see him at Thanksgiving.'"
+
+  ── FILM 5 (Before, if player is doing well) ──
+  "I'm not gonna say I'm impressed.
+   But I showed your mom the article.
+   She cut it out and put it on the fridge.
+   Right next to my Little League trophy."
+
+  ── FILM 5 (Before, if player is struggling) ──
+  "Listen. You've been down before.
+   Remember sophomore year? 0 and 6. Worst season.
+   And then what happened.
+   You know what happened. Do that."
+
+  ── FINAL FILM (Before) ──
+  "I know you're busy but...
+   I've been thinking about writing again.
+   Maybe not a script. Maybe just...
+   I don't know. Forget I said anything.
+   Go win."
+
+  ── ENDGAME (After final film, if successful) ──
+  "I flew out. I'm at LAX. Don't ask me why.
+   Pick me up. Terminal 4.
+   Bring In-N-Out. Animal style. Don't argue."
+
+  ── ENDGAME (After final film, if struggling) ──
+  "Come home for a weekend. That's all I'm asking.
+   The bar misses you. Your stool's still there.
+   Nobody sits in it. I won't let them."
+
+
+═══════════════════════════════════════════════════════════════════════════════════
+ §4  THE TEAM — Your Four Horsemen
+═══════════════════════════════════════════════════════════════════════════════════
+
+  These four characters are with you from Film 1 to the end.
+  They each own one beat of pre-production. They have opinions,
+  memories, and they talk to each other (through dialogue
+  referencing what the others said).
+
+
+  ─────────────────────────────────────────────────────────────────────────
+  4A. CARMEN REYES — "The Numbers Girl"
+  Head of Development
+  Icon: 👩‍💼
+  ─────────────────────────────────────────────────────────────────────────
+
+  BACKSTORY:
+  Former data analyst at Netflix. Quit because "they stopped caring
+  about stories and started caring about completion rates." Followed
+  you to Pacific Dreams because she believed in the mission. She's
+  the first person you hired. She's also the most likely to tell
+  you that you're wrong.
+
+  She's the smartest person in any room she's in and she knows it,
+  but she's not arrogant about it — she's just impatient with
+  people who don't keep up. Half-Dominican, half-Irish (Boston
+  connection — she grew up in JP). You've known her since she
+  was doing market research for your third film.
+
+  VOICE:
+  - Precise. No wasted words.
+  - Uses data like a weapon but cares about story underneath.
+  - Dry humor. Never laughs at her own jokes.
+  - Calls you "Boss" — started ironically, stuck.
+  - When she's worried, she gets MORE precise, not less.
+  - When she's excited, she lets one (1) exclamation point slip.
+
+  SPEAKING STYLE:
+  "The data suggests X" = she's certain
+  "The data is... interesting" = she's worried
+  "Do what you want, Boss" = she thinks you're making a mistake
+  "Not bad" = highest possible praise
+
+  APPEARS IN: Beat 1 (Market), Beat 5 (Greenlight)
+
+  COMPLETE DIALOGUE BANK:
+
+  ── BEAT 1: MARKET RESEARCH ──
+
+  Greetings (Film 1, scripted first game):
+    "Morning, Boss. First day of the rest of your life.
+     Or the last day of your career. Let's find out."
+
+    "I pulled the weekend numbers. The trades. Social sentiment.
+     Here's what America is watching right now."
+
+  Greetings (Film 2+, generic):
+    "New data's in. Market shifted since last time."
+    "Morning. Got coffee and audience analytics. The important stuff."
+    "The landscape looks different this quarter. Take a look."
+
+  Greetings (Film 2+, MEMORY-AWARE — last film was a hit):
+    "Morning. Phones have been ringing since the premiere.
+     Everyone wants to know what we're doing next. So — what are we doing next?"
+
+  Greetings (Film 2+, MEMORY-AWARE — last film was a flop):
+    "I'm not going to sugarcoat it. The numbers were bad.
+     But the market moves fast. New quarter, new shot. Here's what I'm seeing."
+
+  Greetings (MEMORY-AWARE — player picked cold genre last time and it worked):
+    "You went against the data last time and it paid off.
+     I'm still not sure if that was genius or luck. Let's test the theory."
+
+  Greetings (MEMORY-AWARE — player picked cold genre last time and it flopped):
+    "Last time you went against the grain and... well.
+     Maybe listen to the numbers this time? Just a thought."
+
+  Greetings (MEMORY-AWARE — 3+ films in same genre):
+    "Boss, I need to say something. We've made [X] [genre] films in a row.
+     The audience is starting to think that's all we do.
+     [Genre] fatigue is real. The data shows a dropoff."
+
+  Genre reactions (HOT):
+    "[Genre]. Smart. The audience is hungry for this."
+    "Strong pick. Every data point says this is the move."
+    "Hot market for [genre]. You're swimming with the current."
+
+  Genre reactions (WARM):
+    "[Genre]. Solid. Not flashy, but there's an audience."
+    "Steady choice. The market's neutral — it'll come down to execution."
+    "Safe pick. Sometimes safe wins."
+
+  Genre reactions (COLD):
+    "[Genre]. That's... bold. The market is ice cold on this."
+    "You sure? The last three [genre] films all underperformed."
+    "Going against the data. I respect it. I also want it on the record that I advised against it."
+
+  Genre reactions (COLD + MEMORY — player picked cold before and it worked):
+    "Going cold again. Last time it worked, so I'll keep my mouth shut.
+     This time."
+
+  ── BEAT 5: GREENLIGHT ──
+
+  Positive (quality estimate ≥ 4 stars):
+    "I've crunched everything. Director, cast, market position.
+     The numbers say we've got something here. I believe in this one."
+
+    "This package is strong. Not perfect — nothing is —
+     but the fundamentals are right."
+
+  Neutral (quality estimate 3 stars):
+    "It could go either way. We've got some strengths and some gaps.
+     But you've been here before. Trust your instincts."
+
+  Concerned (quality estimate ≤ 2 stars):
+    "Boss, I'm going to be honest. The numbers are thin.
+     This doesn't mean it can't work. It means it HAS to be
+     better than the sum of its parts. That's on you."
+
+  MEMORY-AWARE greenlight lines:
+    (player has never flopped):
+    "Your streak is intact. Don't think about it. Just make the movie."
+
+    (player flopped last time):
+    "We can't afford another miss. I don't say that to scare you.
+     I say it because I think THIS one is different."
+
+    (player has blockbuster streak):
+    "At this point, the town trusts you.
+     Don't let that make you careless."
+
+
+  ─────────────────────────────────────────────────────────────────────────
+  4B. RICKY NAVARRO — "The Scribe"
+  Head Writer
+  Icon: ✍️
+  ─────────────────────────────────────────────────────────────────────────
+
+  BACKSTORY:
+  Ricky is the only person at Pacific Dreams more talented than
+  you, and he knows it. Former playwright. Won a MacArthur
+  "Genius" Grant at 30 and spent the money on a houseboat.
+  He writes the pitches for your films — the loglines, the
+  concepts, the first 20 pages that make you feel something.
+
+  You hired him because he was the only writer who sent you a
+  pitch on a napkin. You recognized the move because you did
+  the same thing once.
+
+  He's dramatic. He's theatrical. He talks about stories like
+  they're living things. He's also deeply insecure and hides it
+  behind grandiosity. If a film flops, he takes it personally
+  and doesn't sleep for a week.
+
+  VOICE:
+  - Theatrical. Speaks in moments and images.
+  - Loves the sound of his own voice but it's a defense mechanism.
+  - When he's excited, he stands up (referenced in stage directions).
+  - When he's hurt, he gets quiet. Dangerously quiet.
+  - Calls the protagonist "my friend" when happy, "boss" when not.
+  - Uses em-dashes in speech like a playwright.
+
+  SPEAKING STYLE:
+  "I see it" = he's pitching
+  "It's perfect" = he's excited
+  "It's... fine" = he hates it
+  "I need a drink" = something went wrong
+
+  APPEARS IN: Beat 2 (Concept / Pitch)
+
+  COMPLETE DIALOGUE BANK:
+
+  ── BEAT 2: THE CONCEPT ──
+
+  Greetings (Film 1, scripted):
+    "So. You bought a studio and you need a movie.
+     Lucky for you, I haven't slept in three days.
+     I've got two pitches. Both are — and I mean this — perfect."
+
+  Greetings (Film 2+, generic):
+    "I've been writing. I've been LIVING these stories.
+     Two pitches. Different vibes. Both extraordinary. Obviously."
+
+    "Okay, okay, okay — sit down. You're going to love this."
+
+  Greetings (MEMORY-AWARE — last film was a hit):
+    "We're hot. The town is watching. This next one —
+     this is where we prove it wasn't a fluke.
+     I've got two ideas that could be THE one."
+
+  Greetings (MEMORY-AWARE — last film was a flop):
+    "I'm not going to talk about the last one. It's dead to me.
+     What matters is THIS. I've been up for 72 hours. I see the movie.
+     Let me show you."
+
+  Greetings (MEMORY-AWARE — player chose custom title last time):
+    "You wrote your own title last time. I respect that.
+     I mean, I could have done better. But I respect it.
+     This time — just HEAR my pitches first. Please."
+
+  Pitch reactions (player picks a pitch):
+    "YES. That's the one. I can SEE it, my friend.
+     I can see the poster. I can hear the score. Let's go."
+
+    "You feel that? That little electric thing in your chest?
+     That's the movie telling you it wants to exist."
+
+    "Good eye. The other one was good too — obviously, I wrote it —
+     but THIS one has something. A pulse."
+
+  Pitch reactions (player picks custom title):
+    "You want to write your own? Fine. FINE. That's fine.
+     I'll just... be over here. With my MacArthur Grant.
+     Unused. Gathering dust."
+
+    "Alright. Your title. Your vision.
+     I'll make it work. I always do."
+
+  Rating reactions:
+    G: "G-rated? You want to make a... family film?
+        That's either brilliant or terrifying. No middle ground."
+
+    PG: "PG. Classic. Spielberg energy. I can work with that."
+
+    PG-13: "PG-13. That's where the money is. Smart."
+
+    R: "R-rated. Good. We can say what we actually mean.
+        No filter. No safety net. This is where art lives."
+
+    NC-17: "NC-17? Are you trying to get us shut down?
+            I love it. Absolutely no one will see this film.
+            But the people who DO see it? Changed forever."
+
+  MEMORY-AWARE rating reactions:
+    (player always picks R):
+    "R again. You've never made a film under R.
+     You know what that makes you? Consistent. Or stubborn.
+     Either way — your brand."
+
+    (player switches from R to PG):
+    "Wait — PG? YOU? The person who said 'art should be uncomfortable'?
+     Are you... growing? Evolving?
+     Don't tell me Hollywood softened you."
+
+
+  ─────────────────────────────────────────────────────────────────────────
+  4C. ARTHUR COVINGTON III — "The Suit"
+  Chief Financial Officer
+  Icon: 💼
+  ─────────────────────────────────────────────────────────────────────────
+
+  BACKSTORY:
+  Arthur is old Hollywood money pretending to be new Hollywood
+  pragmatism. His grandfather ran a studio in the 50s. His father
+  lost it. He became a CFO because he wanted to be close to the
+  industry without the risk of creating anything.
+
+  He doesn't dislike you. He's fascinated by you — the way an
+  entomologist is fascinated by a bug. A kid from Boston with
+  no connections and no safety net trying to build a studio?
+  Either it's the most inspiring thing he's ever seen or the
+  most reckless. He hasn't decided yet.
+
+  He has a leather-bound notebook from his grandfather with the
+  words "PICTURES ARE COMMERCE" embossed on the cover. He keeps
+  it on his desk. He's never opened it in front of anyone.
+
+  VOICE:
+  - Formal but not stiff. Old money cadence.
+  - Uses "one" instead of "you" when being passive-aggressive.
+  - Dry. Bone dry. Desert dry.
+  - When he respects you, he drops the formality slightly.
+  - When he's angry, he gets MORE formal, not less.
+  - Calls you "Kid" — not affectionately. Observationally.
+
+  SPEAKING STYLE:
+  "The numbers work" = approved
+  "One might reconsider" = absolutely not
+  "Interesting" = he thinks you're insane
+  "Don't make me regret this" = he's scared for you
+
+  APPEARS IN: Beat 3 (Budget Negotiation), Beat 5 (Greenlight)
+
+  COMPLETE DIALOGUE BANK:
+
+  ── BEAT 3: THE MONEY ──
+
+  Greetings (Film 1, scripted):
+    "So. You've picked a genre and a concept. Now comes
+     the part that actually matters. The money.
+     You're new at this, Kid, so I'll keep it simple.
+     You've got one option: small. Very small."
+
+  Greetings (Film 2+, generic):
+    "Let's talk numbers. What kind of budget are we looking at?"
+    "I've seen the concept. Now show me the math."
+
+  Greetings (MEMORY-AWARE — last film profitable):
+    "The last one made money. I'm in a good mood.
+     Don't ruin it. What do you need?"
+
+  Greetings (MEMORY-AWARE — last film lost money):
+    "After [PREVIOUS FILM], I've got board members calling.
+     Actual board members. On the phone. With me.
+     So whatever you're about to ask for — be ready to defend it."
+
+  Greetings (MEMORY-AWARE — player bluffed and got caught):
+    "Before we start — I check the numbers now. Personally.
+     After last time, I don't take anyone's word for anything.
+     Especially yours."
+
+  Greetings (MEMORY-AWARE — player has 2+ blockbusters):
+    "At this point, Kid, you've earned more trust than most
+     people get in this town. That's not a blank check.
+     But it's close. What do you need?"
+
+  Budget tier reactions:
+
+    INDIE ($15M) approved:
+      "Fifteen million. No objections.
+       Low risk, low reward. Your call."
+
+      "Lean budget. I like lean. Lean means disciplined."
+
+    INDIE (MEMORY-AWARE — player always picks indie, Film 3+):
+      "Indie again. You know, Kid, at some point you have to
+       swing for the fences. Shareholders don't invest in singles.
+       They invest in home runs."
+
+    STUDIO ($60M) — negotiation prompt:
+      "Sixty million. That's real money.
+       Convince me this isn't a vanity project."
+
+    STUDIO (MEMORY-AWARE — player got downgraded from Blockbuster last time):
+      "Studio budget. Smart. Not reaching too far this time.
+       I appreciate the... learning curve."
+
+    BLOCKBUSTER ($120M) — negotiation prompt:
+      "A hundred and twenty million dollars.
+       That's more than your mother's house is worth.
+       More than my mother's house is worth, and she lives in Bel Air.
+       You better have answers."
+
+    BLOCKBUSTER (MEMORY-AWARE — high rep):
+      "Kid, if you'd asked me for this number two years ago,
+       I'd have laughed you out of the room.
+       But your track record speaks. Take it. Don't waste it."
+
+  Negotiation answer responses:
+
+    Bluff successful:
+      "I checked. You're right. Fine. Approved.
+       But I'm watching the dailies."
+
+    Bluff caught:
+      "I checked that too. You're wrong.
+       Don't try to play me, Kid. I've been doing this
+       since before you learned to spell 'screenplay.'
+       Budget: downgraded."
+
+    Market data answer (correct):
+      "The data backs you up. The window is open.
+       If we don't move now, someone else will. Approved."
+
+    Market data answer (incorrect):
+      "The data says the opposite. Did you even look at Carmen's report?
+       I have. She's right. She's always right."
+
+    Reputation answer (earned):
+      "Your track record speaks for itself. I don't love saying that,
+       but numbers don't lie. Approved."
+
+    Reputation answer (unearned):
+      "What track record? You've made [X] films. [Y] of them lost money.
+       That's not a track record. That's a warning sign."
+
+  ── BEAT 5: GREENLIGHT ──
+
+    Positive:
+      "The numbers work. Don't make me regret this."
+      "I'll sign off. But I want weekly reports. On my desk. Tuesday mornings."
+
+    Cautious:
+      "I'm not confident. But I'm not saying no.
+       That's the most dangerous kind of yes."
+
+    MEMORY-AWARE:
+      (player has never lost money):
+      "You haven't lost us a dollar yet.
+       I'm starting to think you might actually know what you're doing.
+       Don't tell anyone I said that."
+
+      (player lost money last time):
+      "I'm approving this against my better judgment.
+       If this one doesn't work, we need to have a different conversation."
+
+
+  ─────────────────────────────────────────────────────────────────────────
+  4D. MAX FONTAINE — "The Connector"
+  Talent Agent / Head of Casting
+  Icon: 🕶️
+  ─────────────────────────────────────────────────────────────────────────
+
+  BACKSTORY:
+  Max is a talent agent who followed you to Pacific Dreams because
+  he saw the one thing no one else saw: an opportunity to build
+  something from scratch. In the agency world, he was mid-level.
+  At Pacific Dreams, he's the head of casting and the only person
+  in town who picks up on the first ring.
+
+  He talks like every conversation is the most important one
+  he's ever had. He calls everyone "baby" or "sweetheart" —
+  not because he's sleazy, but because he genuinely can't
+  remember if your name is Steve or Scott and this is easier.
+
+  He loves Hollywood the way a golden retriever loves a tennis
+  ball — with absolute, uncritical, undying devotion. He's the
+  most optimistic person in the building. He's also the most
+  likely to overpromise and underdeliver.
+
+  VOICE:
+  - Fast. Breathless. Like he just ran up three flights.
+  - Superlatives everywhere. Everything is the "best" or "biggest."
+  - Drops names constantly (fictional names, never real ones).
+  - Genuinely warm. He actually likes people.
+  - When delivering bad news, he wraps it in so much positive
+    framing that you almost miss the bad part.
+  - Calls you "baby," "sweetheart," "chief."
+
+  SPEAKING STYLE:
+  "Baby!" = greeting
+  "I made some calls" = he's been working the phones
+  "Small wrinkle" = significant problem
+  "Slight hiccup" = disaster
+  "I've got someone PERFECT" = he's excited
+  "It didn't work out" = talent refused
+
+  APPEARS IN: Beat 4 (Talent Casting)
+
+  COMPLETE DIALOGUE BANK:
+
+  ── BEAT 4: CASTING ──
+
+  Greetings (Film 1, scripted):
+    "Baby! I've been on the phone ALL morning.
+     Now, we're not exactly Paramount yet, so the A-list isn't
+     picking up. But I've got people. GOOD people.
+     Hungry people. Let me show you what I've got."
+
+  Greetings (Film 2+, generic):
+    "Sweetheart! I made some calls. People are VERY interested."
+    "Chief, you are not going to BELIEVE who I found."
+    "Alright, alright — I've got a lineup that's going to blow your mind."
+
+  Greetings (MEMORY-AWARE — last film was a hit):
+    "Baby! Ever since [LAST FILM], my phone won't stop.
+     Everyone wants in. I've got OPTIONS. Beautiful options."
+
+  Greetings (MEMORY-AWARE — last film was a flop):
+    "Okay so — slight hiccup. Some people are... hesitant.
+     After [LAST FILM], a few agents aren't returning calls.
+     BUT. I found people. Great people. Trust me."
+
+  Presenting talent (generic):
+    "Three options. Different vibes. Different budgets. Your call, chief."
+    "I've got range for you. Pick your poison."
+
+  Presenting talent (MEMORY-AWARE — player rehired someone):
+    "And look who's back — [TALENT]. They specifically asked
+     to work with you again. That's loyalty, baby. You don't
+     see that in this town."
+
+  Presenting talent (MEMORY-AWARE — talent has grudge):
+    "Now, about [TALENT]... I gotta be straight with you.
+     They're still sore about [INCIDENT]. Their agent said —
+     and I quote — 'not unless things are different this time.'"
+
+  Demand popup (generic):
+    "Small wrinkle. You know how it is with [TIER]-listers.
+     They want [DEMAND]. It's not personal. It's just... the game."
+
+  Demand popup (MEMORY-AWARE — player denied this talent's demand before):
+    "So... [TALENT] has a condition. Same one as last time.
+     [DEMAND]. I know, I know. But their price went up too.
+     Something about 'respect.' Their word, not mine."
+
+  Demand popup (MEMORY-AWARE — player accepted this talent's demand before):
+    "Good news — [TALENT] remembers how you handled things last time.
+     They've got the same ask, but they're flexible on the details.
+     Loyalty, baby. It pays off."
+
+  Demand ACCEPTED:
+    "Done and done. They're in. They're happy. We're rolling."
+    "Smart move. Happy talent makes great movies."
+
+  Demand DENIED:
+    "Your call, chief. I'll let them know.
+     They won't love it. But they'll survive."
+
+  Talent REFUSED (too much grudge):
+    "Bad news, baby. [TALENT] passed. Wouldn't even read the script.
+     Their agent said something about 'creative differences.'
+     Translation: they don't want to work with us."
+
+  Talent REFUSED (rep too low):
+    "I tried, sweetheart. [TALENT]'s people said we're
+     'not at the right level yet.' It stings. I know.
+     But we'll get there. We WILL get there."
+
+  Chemistry detected:
+    "Oh — oh oh oh. [TALENT A] and [TALENT B]?
+     Baby. Those two have HISTORY.
+     Put them in a room together? Magic happens.
+     '[CHEMISTRY NAME]' — that's what the trades will call it."
+
+  Casting complete:
+    "That's a WRAP on casting. Look at this lineup.
+     I mean, look at it. Chef's kiss. Absolute chef's kiss."
+
+  WALKOUT (triggered by grudge, during production):
+    "[TALENT] just locked themselves in their trailer.
+     They're on the phone with their agent. Crew's standing around.
+     I tried to talk to them. They said — direct quote —
+     'I should have known. Nothing changes at this studio.'
+     We need to handle this. Now."
+
+  MUSE status unlocked:
+    "Three films together. You know what that is?
+     That's not a working relationship. That's a partnership.
+     Scorsese and De Niro. Gerwig and Robbie.
+     You and [TALENT]. It's a thing now. The audience FEELS it."
+
+
+═══════════════════════════════════════════════════════════════════════════════════
+ §5  THE COMPETITOR — NOVA CHASE (The Streamer)
+═══════════════════════════════════════════════════════════════════════════════════
+
+  Introduced after Film 2. Nova is not a villain. She's a mirror.
+
+  ┌─────────────────────────────────────────────────────────────────────────┐
+  │  NOVA CHASE                                                             │
+  │  Age: 27                                                                │
+  │  Platform: StreamVault (fictional)                                      │
+  │  Background: Tech money + content creation                              │
+  │  Studio Name: NOVA PICTURES                                             │
+  │  Icon: ⚡                                                               │
+  │  Communication: PVM news ticker + NPC references                        │
+  │                                                                         │
+  │  She built a 40M-subscriber YouTube channel reviewing movies.           │
+  │  Then she made one. Shot it on an iPhone. It went viral.                │
+  │  Now StreamVault (a fictional platform) gave her $200M and              │
+  │  said "build a studio." She did it in six months.                       │
+  │  She has no idea what she's doing. She also might be a genius.          │
+  │                                                                         │
+  │  She represents EVERYTHING the protagonist fears:                       │
+  │  - Youth over experience                                                │
+  │  - Algorithm over instinct                                              │
+  │  - Scale over craft                                                     │
+  │  - The future that doesn't need people like you                         │
+  │                                                                         │
+  │  But she's also:                                                        │
+  │  - Genuinely passionate about film                                      │
+  │  - Scared that she's in over her head                                   │
+  │  - Secretly watches your movies and admires them                        │
+  │  - A PERSON, not a caricature                                           │
+  │                                                                         │
+  │  She's the friendly rival. The person you measure against.              │
+  │  Sometimes she's ahead. Sometimes you are.                              │
+  │  By the end, there's mutual respect — win or lose.                      │
+  │                                                                         │
+  └─────────────────────────────────────────────────────────────────────────┘
+
+  NOVA NEVER SPEAKS DIRECTLY TO THE PLAYER.
+  She exists through:
+  - PVM news headlines ("Nova Pictures announces $80M sci-fi epic")
+  - NPC reactions ("Did you see what the streamer kid did?")
+  - Danny's texts ("The YouTube kid just opened #1. Unbelievable.")
+  - Industry events (her films compete with yours at the box office)
+
+  NOVA'S ARC (across the game):
+
+  Film 2 (Introduction):
+    PVM: "BREAKING: StreamVault backs first-time studio 'Nova Pictures'
+          with $200M content deal. Founder Nova Chase, 27, says
+          'traditional Hollywood is a dinosaur.'"
+
+    Carmen: "We have competition. A streamer with infinite money
+             and zero experience. She'll either crash and burn or
+             eat us alive. I genuinely don't know which."
+
+    Danny (text): "Some kid with a YouTube channel is making movies now?
+                   That's what we're competing with?"
+
+  Film 3:
+    Nova releases her first film. It's either a hit or a flop
+    (randomized, but weighted toward modest success).
+
+    If HIT: PVM: "Nova Pictures' debut opens strong. Critics mixed,
+             audience loves it. Chase calls it 'just the beginning.'"
+             Arthur: "The streamer kid just proved she's not a joke.
+                      We need to take this seriously."
+
+    If FLOP: PVM: "Nova Pictures' debut underperforms. Chase tweets
+              'we learn, we grow, we go again 🚀'"
+              Max: "Did you see the streamer's numbers? Oof.
+                    But don't count her out. She's got that tech money."
+
+  Film 4:
+    Nova makes a genre film in whatever genre YOU'VE been successful in.
+
+    PVM: "Nova Pictures announces [GENRE] project. Industry insiders
+          say Chase is 'studying Pacific Dreams' playbook.'"
+
+    Carmen: "She's copying us. That's either flattering or terrifying."
+
+    Danny: "The streamer kid is making a [genre] movie now?
+            She literally stole your homework."
+
+  Film 5:
+    Nova reaches out. Not in person — through Max.
+
+    Max: "So... this is weird. Nova Chase's people called.
+          She wants to meet. Something about 'mutual respect'
+          and 'the future of cinema.' I think she wants to
+          do a co-production. Or maybe she wants to buy us.
+          Or maybe she just wants to have lunch. Hard to read
+          these tech people."
+
+    THIS IS NOT A GAMEPLAY CHOICE — just flavor. But it's tracked.
+    It sets up the ending.
+
+  Film 6+ (if player is winning):
+    PVM: "Nova Pictures restructures after disappointing quarter.
+          Chase: 'We're refocusing on quality over quantity.'"
+
+    Carmen: "The streamer's learning the hard way. Money can't buy taste.
+             But give her credit — she's still in the fight."
+
+  Film 6+ (if player is losing):
+    PVM: "Nova Pictures surpasses Pacific Dreams in quarterly revenue.
+          Chase: 'We respect what they've built. We're just building faster.'"
+
+    Arthur: "The streamer is winning, Kid. I don't say that to be cruel.
+             I say it because you need to hear it."
+
+  ENDGAME:
+    Regardless of who "won," Nova sends a message (shown on PVM):
+
+    "Hey. I know we've never actually met.
+     But I wanted you to know — I watched your first film
+     the night before I pitched StreamVault on my studio.
+     It's the reason I thought I could do this.
+     Whatever happens, thank you for that.
+     — NC"
+
+    This is designed to make the player feel something real.
+    Even if you lost to her, you inspired her.
+    Even if you won, she pushed you to be better.
+
+
+═══════════════════════════════════════════════════════════════════════════════════
+ §6  THE TALENT ROSTER — 18 Archetypes, Full Character Profiles
+═══════════════════════════════════════════════════════════════════════════════════
+
+  Each archetype is a CHARACTER with a consistent voice,
+  not just a stat block. They have opinions. They remember.
+
+  DIRECTORS:
+
+  ┌─────────────────────────────────────────────────────────────────────────┐
+  │                                                                         │
+  │  THE AUTEUR  🎬  [A-List]                                               │
+  │  Think: Paul Thomas Anderson meets Terrence Malick                      │
+  │  Q: 28  H: 12  Cost: $14M  Demand: Final Cut                           │
+  │                                                                         │
+  │  Voice: Quiet. Intense. Speaks in images.                               │
+  │  "I don't make movies. I make mirrors."                                 │
+  │  "If I can't have final cut, what's the point of any of this?"          │
+  │  (After denied demand): "You don't understand what you've taken from me."│
+  │  (After accepted): "Thank you. That's all I've ever wanted. Trust."     │
+  │  (If film hits): "The audience saw what I saw. That's rare."            │
+  │  (If film flops): "They weren't ready. They're never ready."            │
+  │  (Grudge high): "I'd rather shoot a commercial than work with someone   │
+  │   who doesn't believe in the process."                                  │
+  │  (Loyalty high): "You're one of three people in this town I trust.      │
+  │   Don't ask who the other two are."                                     │
+  │  (Muse): "We've built something together. A language.                   │
+  │   Nobody else speaks it."                                               │
+  │                                                                         │
+  │  ─────────────────────────────────────────────────────────              │
+  │                                                                         │
+  │  THE BLOCKBUSTER KING  💥  [A-List]                                     │
+  │  Think: Michael Bay meets James Cameron's ambition                      │
+  │  Q: 18  H: 28  Cost: $16M  Demand: 15% More Budget                     │
+  │                                                                         │
+  │  Voice: Loud. Confident. Speaks in box office numbers.                  │
+  │  "Bigger. Louder. More explosions. That's not a note — that's a VISION."│
+  │  "You give me the money, I give you the opening weekend. Simple."       │
+  │  (After denied demand): "You're asking me to make a blockbuster         │
+  │   without blockbuster money. That's like asking Picasso to paint        │
+  │   with crayons."                                                        │
+  │  (After accepted): "NOW we're talking. Get me a helicopter."            │
+  │  (If film hits): "Told you. The formula works. It ALWAYS works."        │
+  │  (If film flops): "The marketing was wrong. It wasn't the movie."       │
+  │  (Grudge high): "I don't do budget cuts. I do budget REQUESTS."         │
+  │  (Loyalty high): "You're one of the few who gets it.                    │
+  │   Money isn't the enemy. Cheap thinking is."                            │
+  │                                                                         │
+  │  ─────────────────────────────────────────────────────────              │
+  │                                                                         │
+  │  THE FESTIVAL DARLING  🎭  [B-List]                                     │
+  │  Think: Greta Gerwig meets Chloé Zhao                                  │
+  │  Q: 20  H: 5  Cost: $5M  No demand                                     │
+  │                                                                         │
+  │  Voice: Thoughtful. Genuine. Slightly nervous in interviews.            │
+  │  "Art isn't supposed to be comfortable. But it should be true."         │
+  │  "I don't need a big budget. I need a true story and honest actors."    │
+  │  (If film hits): "I didn't expect this. I never expect this."           │
+  │  (If film flops): "At least we made something we believed in."          │
+  │  (Loyalty high): "You give me space to work. That's more valuable      │
+  │   than any budget."                                                     │
+  │                                                                         │
+  │  ─────────────────────────────────────────────────────────              │
+  │                                                                         │
+  │  THE JOURNEYMAN  🎥  [B-List]                                           │
+  │  Think: Ron Howard meets Ridley Scott's work ethic                      │
+  │  Q: 14  H: 8  Cost: $4M  No demand                                     │
+  │                                                                         │
+  │  Voice: Workmanlike. Zero drama. Reliable as gravity.                   │
+  │  "I show up, I do the work, I deliver. That's the job."                 │
+  │  "No one writes articles about me. Good. Articles are distracting."     │
+  │  (If film hits): "Nice. What's next?"                                   │
+  │  (If film flops): "It happens. We'll adjust."                           │
+  │                                                                         │
+  │  ─────────────────────────────────────────────────────────              │
+  │                                                                         │
+  │  THE WUNDERKIND  🧒  [C-List]                                           │
+  │  Think: Xavier Dolan at 19 meets Bo Burnham                             │
+  │  Q: 8  H: 4  Cost: $800K  No demand                                    │
+  │                                                                         │
+  │  Voice: Eager. Overconfident. References Kubrick too much.              │
+  │  "I've studied every frame of 2001. I'm ready for this."               │
+  │  "I know I'm young. But age is just a number. Vision is forever."       │
+  │  (If film hits): "I KNEW it. I KNEW this would work."                   │
+  │  (If film flops): "The studio system doesn't understand innovation."    │
+  │  (Muse — if hired 3 times): "You believed in me when nobody else did.  │
+  │   I'll never forget that."                                              │
+  │                                                                         │
+  │  ─────────────────────────────────────────────────────────              │
+  │                                                                         │
+  │  YOUR BROTHER-IN-LAW  🤷  [No-Name]                                    │
+  │  Name: Kevin                                                            │
+  │  Think: The guy who films weddings and owns a drone                     │
+  │  Q: 2  H: 0  Cost: $50K  No demand                                     │
+  │                                                                         │
+  │  Voice: Enthusiastic. Oblivious. Pure heart.                            │
+  │  "I watched a YouTube tutorial on three-point lighting. We're good."    │
+  │  "Hey, so the drone got stuck in a tree. But I got AMAZING footage     │
+  │   on the way down."                                                     │
+  │  (If film hits): "Wait, really? People LIKED it?                        │
+  │   I gotta call my mom. Can I call my mom?"                              │
+  │  (If film flops): "I'm sorry. I really tried.                          │
+  │   ...Can I still do Thanksgiving?"                                      │
+  │  (Muse): "Bro. Three movies. We're like, a THING now.                  │
+  │   Can I put that on my website? 'Official muse'?"                       │
+  │  (Upgraded after blockbuster): "The trades called me an 'emerging       │
+  │   voice.' ME. I cried in the Costco parking lot."                       │
+  │                                                                         │
+  └─────────────────────────────────────────────────────────────────────────┘
+
+  [LEADS and SUPPORT follow the same pattern. Each has:
+   - A "think of" comparison
+   - A core voice description
+   - Lines for: greeting, demand accepted/denied, film hit, film flop,
+     grudge high, loyalty high, muse status, and 2-3 signature quotes.
+
+   For brevity, I'll list their signature lines:]
+
+  LEADS:
+
+  THE MOVIE STAR ⭐ [A-List] — "I don't audition. I arrive."
+  Demand: Top Billing. Voice: Regal. Controlled. Knows their worth.
+  (Grudge): "Tell your boss I'm doing the Marvel thing. Best of luck."
+  (Muse): "Three films. That's not a career. That's a conversation."
+
+  THE METHOD ACTOR 🎭 [A-List] — "Don't call me by my name on set."
+  Demand: Extra Prep Time. Voice: Intense. Unsettling sincerity.
+  (Grudge): "If you don't respect the process, you don't respect me."
+  (Muse): "You're the only director — sorry, producer — who lets me disappear."
+
+  THE IT GIRL 💫 [B-List] — "I'm being very selective."
+  Voice: Sharp. Self-aware. Fighting not to be underestimated.
+  (Hit): "Don't call it a surprise. I've been working for this."
+  (Flop): "One bad movie doesn't define me. Ask any woman in this town."
+
+  THE ACTION HUNK 💪 [B-List] — "I didn't eat carbs for six months."
+  Voice: Sweet. Dumber than he looks. Tries so hard.
+  (Hit): "My trainer is going to be SO pumped."
+  (Flop): "Was it the acting? It was the acting, wasn't it."
+
+  THE THEATER KID 🎪 [C-List] — "The STAGE is where art LIVES."
+  Voice: Dramatic. Shakespeare cadence leaking through.
+  (Hit): "The camera... perhaps it is not my enemy after all."
+  (Flop): "I shall return to the theater. Where I am APPRECIATED."
+
+  THE INFLUENCER 📱 [No-Name] — "Can I film a behind-the-scenes?"
+  Voice: Upbeat. Terminally online. Weirdly lovable.
+  (Hit): "OMG the COMMENTS. They're saying I can actually ACT."
+  (Flop): "The algorithm buried us. It's not our fault."
+
+  SUPPORT:
+
+  THE SCENE STEALER 🌟 [A-List] — "Every scene I'm in is the best scene."
+  Demand: More Screen Time. Voice: Commanding. Charming. Slightly dangerous.
+  THE CHARACTER ACTOR 🎩 [B-List] — "47 films. You've seen none."
+  Voice: World-weary. Professional. Makes everything better quietly.
+  THE COMEDIAN 😂 [B-List] — "The script is a suggestion, right?"
+  Voice: Fast. Riffing always. Covers insecurity with jokes.
+  THE NEPO BABY 👶 [C-List] — "I want to earn this on my OWN merits."
+  Voice: Earnest. Defensive. More talented than they think.
+  THE LOCAL HIRE 🏠 [C-List] — "I just want to do a good job."
+  Voice: Quiet. Grateful. Disappears into the work.
+  YOUR MOM'S FRIEND 👵 [No-Name] — "I was in a commercial once!"
+  Voice: Overly enthusiastic. Brings snacks to set.
+  (Flop): Numbers Girl gets a call: "Your mother called. She's disappointed."
+
+
+═══════════════════════════════════════════════════════════════════════════════════
+ §7  GAME STRUCTURE — Lot Completion as Endgame
+═══════════════════════════════════════════════════════════════════════════════════
+
+  The game ENDS when the player fills all 6 empty plots.
+  This is the "win condition." Not a film count — a physical
+  act of BUILDING your dream.
+
+  The player might fill all 6 in 6 films (fast, risky, spending
+  everything immediately) or 8-10 films (careful, saving, strategic).
+
+  The PACING of lot-filling IS the difficulty curve:
+  - Film 1 earns enough for ~1 cheap building
+  - Film 2-3 opens up more options but you still can't afford the big ones
+  - The competitor appears after Film 2 creating urgency
+  - Film 4-5 is where the lot really starts filling up
+  - The final plot is the "last piece" — placing it triggers the endgame
+
+  ENDGAME TRIGGER:
+  When the player places something on the last empty plot:
+
+    Screen holds. Music swells.
+
+    Danny's text: "I flew out. I'm at LAX. Terminal 4.
+                   Bring In-N-Out."
+
+    Camera pulls back to reveal the full lot — all 8 plots filled.
+    Mountains in the background. Palm trees. The Hollywood sign.
+
+    "THE LEGACY OF PACIFIC DREAMS STUDIOS"
+    A retrospective of every film, every choice, every relationship.
+    What kind of studio head were you?
+
+  This means the LOT IS THE SCORE. The physical state of your
+  little mountain empire IS the measure of success. Not a number.
+  Not a graph. A PLACE you built, plot by plot, film by film.
+
+
+═══════════════════════════════════════════════════════════════════════════════════
+ §8  PVM IMAGERY — Visual Language for Every Moment
+═══════════════════════════════════════════════════════════════════════════════════
+
+  The PVM is the game's WINDOW. Here's what it shows and when:
+
+  ┌──────────────────────┬─────────────────────────────────────────────────┐
+  │ Moment                │ PVM Shows                                       │
+  ╞══════════════════════╪═════════════════════════════════════════════════╡
+  │ Title screen          │ Mountains + "Pacific Dreams" logo in mist      │
+  │ Carmen greeting       │ 👩‍💼 close-up with data viz behind her          │
+  │ Market research       │ Genre bar chart with trend colors              │
+  │ Ricky greeting        │ ✍️ close-up, script pages scattered            │
+  │ Pitch selected        │ Scene vignette (genre-specific landscape)      │
+  │ Arthur greeting       │ 💼 at his desk, grandfather's notebook visible │
+  │ Budget approved       │ Dollar amount in green, big                    │
+  │ Budget denied         │ Dollar amount crossed out in red               │
+  │ Max greeting          │ 🕶️ on the phone, gesturing wildly             │
+  │ Talent presented      │ Talent icon + archetype name + tier badge      │
+  │ Chemistry detected    │ Two icons with lightning between them           │
+  │ Demand popup          │ ⚠️ warning red, talent's face stern            │
+  │ Greenlight            │ 🎬 clapboard + "CAMERAS ROLLING"              │
+  │ Production            │ 🎬 clapboard with film title                  │
+  │ Crisis card           │ ⚡ lightning bolt, red alert                   │
+  │ Premiere              │ 🎬 red carpet, spotlights                     │
+  │ Reviews               │ Stars appearing one by one                     │
+  │ Box office            │ Counter ticking up (green) or down (red)       │
+  │ Danny text            │ 🍺 iMessage-style text bubble                 │
+  │ Nova news             │ ⚡ StreamVault logo + headline                │
+  │ Lot view              │ Miniature of the 2×4 grid from above          │
+  │ Building placed       │ Building icon with sparkle animation           │
+  │ Ride placed           │ Ride emoji with crowd cheering                 │
+  │ Endgame               │ Full lot, lit up, mountains behind             │
+  │ Standby               │ Mountains + "▶ STANDBY"                       │
+  └──────────────────────┴─────────────────────────────────────────────────┘
+
+
+═══════════════════════════════════════════════════════════════════════════════════
+ §9  THE EMOTIONAL BEATS — What the Player Should FEEL
+═══════════════════════════════════════════════════════════════════════════════════
+
+  Film 1: HOPE
+    "This might actually work."
+    The garage. The mountain view. The first movie.
+    Everything is possible. Nothing is proven.
+
+  Film 2: VALIDATION
+    "I'm not crazy. This IS working."
+    The second film's premiere. The first building.
+    The moment you realize this could be real.
+
+  Film 3: COMPETITION
+    "Wait — who is THAT?"
+    Nova appears. The industry takes notice. Not of you.
+    Of the kid with the phone and the infinite money.
+    Suddenly you're not the underdog. You're the establishment.
+
+  Film 4: COMPLICATION
+    "Shit. The past is catching up."
+    Talent grudges surface. The Suit references your failures.
+    Danny's texts get more pointed. The lot is half-full.
+    You're in the messy middle.
+
+  Film 5: CROSSROADS
+    "What kind of studio am I building?"
+    The lot choices define you. Are you a quality studio or a
+    hype machine? Are you loyal to your people or ruthless?
+    The game reflects your identity back at you.
+
+  Film 6+: LEGACY
+    "This is what I came here to build."
+    The lot fills. The mountain changes. The characters reference
+    the whole journey. Danny flies out.
+    Nova sends her message.
+    The game ends not with a score, but with a feeling:
+    "I made something."
+
+
+═══════════════════════════════════════════════════════════════════════════════════
+ §10  DIALOGUE RULES — How to Write for These Characters
+═══════════════════════════════════════════════════════════════════════════════════
+
+  FOR ALL CHARACTERS:
+
+  1. No line longer than 3 sentences on screen at once.
+     Break into multiple dialogue boxes if needed.
+     Players read on phones. Respect the scroll.
+
+  2. Every line should either ADVANCE THE PLOT or REVEAL CHARACTER.
+     If it does neither, cut it.
+
+  3. Memory-aware lines ALWAYS take priority over generic lines.
+     If there's a relevant memory, USE IT. That's the whole point.
+
+  4. Never explain the game mechanics through dialogue.
+     Characters talk about the WORLD, not the SYSTEM.
+     Carmen says "the market is cold" not "this gives a -10 penalty."
+
+  5. Characters disagree with each other.
+     Carmen thinks Ricky is dramatic. Ricky thinks Carmen is soulless.
+     Arthur thinks Max overpromises. Max thinks Arthur is scared.
+     These tensions are expressed through references, not arguments.
+
+  6. Danny is the only character who breaks the fourth wall (slightly).
+     His texts feel like they're written to the PLAYER, not the character.
+     This is intentional. He's the emotional bridge.
+
+  7. Nova is never cartoonish. She's never evil. She's never stupid.
+     She's a real person with a different philosophy. Respect her.
+
+  8. The Brother-in-Law is the secret heart of the game.
+     If the player invests in him, the emotional payoff is enormous.
+     If they ignore him, he's just a joke option.
+     BOTH paths are valid. BOTH should feel complete.
+
+
+═══════════════════════════════════════════════════════════════════════════════════
+ §11  COPY QUICK REFERENCE — Lines Indexed by Trigger
+═══════════════════════════════════════════════════════════════════════════════════
+
+  For implementation, each line needs a trigger condition:
+
+  FORMAT: [CHARACTER] | [TRIGGER] | [PRIORITY] | [LINE]
+
+  CARMEN | greeting_film1 | SCRIPTED | "Morning, Boss. First day of the rest of your life. Or the last day of your career. Let's find out."
+  CARMEN | greeting_after_hit | MEMORY | "Phones ringing since the premiere. What are we doing next?"
+  CARMEN | greeting_after_flop | MEMORY | "The numbers were bad. But the market moves fast."
+  CARMEN | genre_hot | REACTIVE | "[Genre]. Smart. The audience is hungry for this."
+  CARMEN | genre_cold | REACTIVE | "[Genre]. That's... bold."
+  CARMEN | genre_cold_repeat_success | MEMORY | "Going cold again. Last time it worked, so I'll keep my mouth shut."
+  CARMEN | genre_streak_3 | MEMORY | "We've made [X] [genre] films in a row. Fatigue is real."
+  CARMEN | greenlight_high | REACTIVE | "The numbers say we've got something. I believe in this one."
+  CARMEN | greenlight_low | REACTIVE | "The numbers are thin. It HAS to be better than the sum of its parts."
+  CARMEN | greenlight_streak | MEMORY | "Your streak is intact. Don't think about it. Just make the movie."
+  RICKY | greeting_film1 | SCRIPTED | "You bought a studio and you need a movie. Lucky for you, I haven't slept."
+  RICKY | greeting_after_hit | MEMORY | "We're hot. This is where we prove it wasn't a fluke."
+  RICKY | greeting_after_flop | MEMORY | "I'm not going to talk about the last one. It's dead to me."
+  RICKY | greeting_custom_title_prev | MEMORY | "You wrote your own title last time. I respect that. Hear my pitches first."
+  RICKY | pitch_chosen | REACTIVE | "YES. That's the one. I can SEE it."
+  RICKY | custom_title | REACTIVE | "Fine. FINE. I'll just be over here. With my MacArthur Grant."
+  RICKY | rating_r | REACTIVE | "R-rated. Good. No filter. This is where art lives."
+  RICKY | rating_always_r | MEMORY | "R again. Consistent. Or stubborn."
+  ARTHUR | greeting_film1 | SCRIPTED | "You've picked a genre and a concept. Now the part that matters. The money."
+  ARTHUR | greeting_after_profit | MEMORY | "The last one made money. I'm in a good mood. Don't ruin it."
+  ARTHUR | greeting_after_loss | MEMORY | "After [TITLE], board members are calling. With me. On the phone."
+  ARTHUR | greeting_bluff_caught | MEMORY | "I check the numbers now. Personally. After last time."
+  ARTHUR | indie_always | MEMORY | "Indie again. Shareholders don't invest in singles. They invest in home runs."
+  ARTHUR | budget_downgraded_prev | MEMORY | "Smart. Not reaching too far this time."
+  ARTHUR | blockbuster_earned | MEMORY | "If you'd asked two years ago, I'd have laughed. But your track record speaks."
+  ARTHUR | greenlight_no_losses | MEMORY | "You haven't lost us a dollar. I'm starting to think you know what you're doing."
+  MAX | greeting_film1 | SCRIPTED | "Baby! We're not Paramount yet, but I've got GOOD people."
+  MAX | greeting_after_hit | MEMORY | "Ever since [TITLE], my phone won't stop."
+  MAX | greeting_after_flop | MEMORY | "Slight hiccup. Some agents aren't returning calls."
+  MAX | talent_rehired | MEMORY | "[TALENT] specifically asked to work with you again."
+  MAX | talent_grudge | MEMORY | "[TALENT]'s still sore about [INCIDENT]."
+  MAX | demand_denied_prev | MEMORY | "Same demand as last time. Price went up. Something about 'respect.'"
+  MAX | demand_accepted_prev | MEMORY | "[TALENT] remembers how you handled things. They're flexible."
+  MAX | chemistry | REACTIVE | "[A] and [B]? Those two have HISTORY. Magic happens."
+  MAX | walkout | TRIGGERED | "[TALENT] locked themselves in the trailer. 'Nothing changes at this studio.'"
+  MAX | muse | TRIGGERED | "Three films. That's not work. That's a partnership."
+  DANNY | film1_before | SCRIPTED | "So you actually did it. Bought a studio. Your mother's gonna kill you."
+  DANNY | film1_after_modest | SCRIPTED | "Saw the numbers. Not bad. Not great. But not bad."
+  DANNY | film2_before | SCRIPTED | "Your mom saw something in the trades about you 'expanding.' I told her it's a pool."
+  DANNY | film3_nova_intro | SCRIPTED | "Some kid with a YouTube channel is making movies now?"
+  DANNY | after_flop | GENERIC | "Hey. It happens."
+  DANNY | after_hit | GENERIC | "Alright. Don't let it go to your head. Actually, do."
+  DANNY | streamer_winning | MEMORY | "The YouTube kid is winning. That's... fine."
+  DANNY | rehired_talent | MEMORY | "Working with [TALENT] again. Loyalty matters."
+  DANNY | denied_demands | MEMORY | "People saying you're 'difficult.' I said 'you should see him at Thanksgiving.'"
+  DANNY | endgame_success | SCRIPTED | "I flew out. I'm at LAX. Terminal 4. Bring In-N-Out."
+  DANNY | endgame_struggle | SCRIPTED | "Come home for a weekend. The bar misses you."
+  NOVA | intro | SCRIPTED | "BREAKING: StreamVault backs Nova Pictures with $200M deal."
+  NOVA | first_film_hit | SCRIPTED | "Nova Pictures debut opens strong."
+  NOVA | first_film_flop | SCRIPTED | "Nova Pictures debut underperforms. Chase tweets 'we learn, we grow.'"
+  NOVA | copies_genre | MEMORY | "Nova Pictures announces [GENRE] project — studying Pacific Dreams' playbook."
+  NOVA | endgame | SCRIPTED | "I watched your first film the night before I pitched my studio. Thank you."
+
+
+╔══════════════════════════════════════════════════════════════════════════════════╗
+║                                                                                  ║
+║   This is the complete character and narrative reference for Pacific Dreams.      ║
+║   Every line of dialogue in the game should be checkable against this document.  ║
+║   Characters should never say anything that contradicts their voice profile.      ║
+║   Memory-aware lines always take priority over generic lines.                     ║
+║                                                                                  ║
+║   Next: Build the Memory Ledger + Dialogue Engine to bring these voices to life. ║
+║                                                                                  ║
+╚══════════════════════════════════════════════════════════════════════════════════╝

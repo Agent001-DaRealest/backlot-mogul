@@ -10,6 +10,8 @@ import useStore, { valueToStars } from '../../lib/pacific-dreams/store';
 import { TAGS } from '../../lib/pacific-dreams/memoryLedger';
 import { checkProductionConsequences } from '../../lib/pacific-dreams/consequenceEngine';
 import { COLORS, MONO, DISPLAY, sectionLabel } from './GameStyles';
+import { NPCQuote } from './DialogueComponents';
+import { CHARACTERS } from '../../lib/pacific-dreams/dialogueEngine';
 import CrisisCard from './CrisisCard';
 import JuicyButton from './JuicyButton';
 import { useJuice } from '../../lib/pacific-dreams/juice';
@@ -134,6 +136,27 @@ const CRISIS_CARDS = [
 ];
 
 const CRISIS_CARDS_PER_MOVIE = 5;
+
+// NPC one-liners above each crisis card — thematic mapping
+const pick = arr => arr[Math.floor(Math.random() * arr.length)];
+const CRISIS_NPC_HINTS = {
+  'star-drunk':        { char: CHARACTERS.max,    lines: ['This is what happens when you cast Method types.', 'I warned you about their reputation.'] },
+  'director-tantrum':  { char: CHARACTERS.carmen,  lines: ['Auteurs. Can\'t live with them, can\'t make art without them.', 'Every great director has a temper. Allegedly.'] },
+  'paparazzi':         { char: CHARACTERS.max,    lines: ['TMZ already has the photos. It\'s about damage control now.', 'Free press or career-ending scandal. Thin line.'] },
+  'stunt-gone-wrong':  { char: CHARACTERS.arthur,  lines: ['Insurance won\'t cover this twice.', 'The stunt budget didn\'t account for a second take on a car flip.'] },
+  'script-rewrite':    { char: CHARACTERS.ricky,   lines: ['I told you Act Three needed work. I told you.', 'Look — the bones are good. We just need to rebuild the ending. That\'s all.'] },
+  'weather-disaster':  { char: CHARACTERS.carmen,  lines: ['We can\'t fight nature. But we can adapt.', 'The location scout is already looking at indoor options.'] },
+  'chemistry-magic':   { char: CHARACTERS.ricky,   lines: ['Sometimes the script is just a suggestion.', 'This is the stuff you can\'t write. Let it happen.'] },
+  'budget-crunch':     { char: CHARACTERS.arthur,  lines: ['I\'ve been warning you about this for two weeks.', 'The math doesn\'t lie. We\'re over budget.'] },
+  'viral-set-photo':   { char: CHARACTERS.max,    lines: ['The internet moves fast. We need to move faster.', 'Everyone\'s talking about us. That\'s either very good or very bad.'] },
+  'method-actor':      { char: CHARACTERS.max,    lines: ['They\'re in character. Deeply. Disturbingly.', 'The performance might be legendary. The insurance premiums, less so.'] },
+  'location-nightmare':{ char: CHARACTERS.arthur,  lines: ['Permit issues are budget issues in disguise.', 'City Hall isn\'t returning my calls.'] },
+  'composer-genius':   { char: CHARACTERS.ricky,   lines: ['A new score could elevate everything. Or sink us.', 'The composer says they had a vision at 3 AM. I believe them.'] },
+  'celebrity-cameo':   { char: CHARACTERS.max,    lines: ['They want creative input. That\'s the price of star power.', 'A-list walk-on. Could be gold for the marketing.'] },
+  'test-screening':    { char: CHARACTERS.carmen,  lines: ['Focus groups don\'t lie. But they\'re not always right.', 'The cards were rough. But Blade Runner tested badly too.'] },
+  'late-night-appearance': { char: CHARACTERS.max, lines: ['Talk shows can make or break a release.', 'Let\'s hope they\'re charming on camera. Off-camera, different story.'] },
+  'vfx-disaster':      { char: CHARACTERS.arthur,  lines: ['The VFX house went under mid-production. This is a budget crisis.', 'Practical effects might actually be cheaper at this point.'] },
+};
 
 function drawCrisisCards(count = CRISIS_CARDS_PER_MOVIE) {
   const shuffled = [...CRISIS_CARDS].sort(() => Math.random() - 0.5);
@@ -518,9 +541,9 @@ export default function Production() {
     }, 300);
   };
 
-  // ── Handle premiere transition ──
+  // ── Handle next phase — marketing campaign before premiere ──
   const handlePremiere = () => {
-    setPhase('premiere');
+    setPhase('marketing');
   };
 
   if (!currentFilm) return null;
@@ -611,13 +634,20 @@ export default function Production() {
 
       {/* Crisis cards */}
       {!showingWalkout && !isComplete && crisisIndex < totalCards && (
-        <CrisisCard
-          key={cardKey}
-          crisis={crisisDeck[crisisIndex]}
-          cardIndex={crisisIndex}
-          totalCards={totalCards}
-          onResolve={handleResolve}
-        />
+        <>
+          {/* NPC hint above crisis card */}
+          {(() => {
+            const hint = CRISIS_NPC_HINTS[crisisDeck[crisisIndex]?.id];
+            return hint ? <NPCQuote character={hint.char} line={pick(hint.lines)} /> : null;
+          })()}
+          <CrisisCard
+            key={cardKey}
+            crisis={crisisDeck[crisisIndex]}
+            cardIndex={crisisIndex}
+            totalCards={totalCards}
+            onResolve={handleResolve}
+          />
+        </>
       )}
 
       {/* Production complete */}

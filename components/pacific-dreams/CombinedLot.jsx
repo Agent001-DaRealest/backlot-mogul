@@ -6,11 +6,12 @@
 // Adapted from the prop-driven CombinedLot.jsx into store-driven.
 // ─────────────────────────────────────────────────────────────
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import useStore, { valueToStars, BUILDINGS } from '../../lib/pacific-dreams/store';
 import { COLORS, MONO, DISPLAY } from './GameStyles';
 import JuicyButton from './JuicyButton';
 import { useJuice } from '../../lib/pacific-dreams/juice';
+import { getNovaHeadline } from '../../lib/pacific-dreams/dialogueEngine';
 
 // ═══════════════════════════════════════════
 // RIDE ICONS — genre → emoji mapping
@@ -23,7 +24,7 @@ const RIDE_ICONS = {
 // ═══════════════════════════════════════════
 // FORMAT MONEY — compact display
 // ═══════════════════════════════════════════
-const fmt = n => n >= 1e6 ? `$${(n / 1e6).toFixed(1)}M` : n >= 1e3 ? `$${(n / 1e3).toFixed(0)}K` : `$${n}`;
+const fmt = n => n >= 1e9 ? `$${(n / 1e9).toFixed(1)}B` : n >= 1e6 ? `$${(n / 1e6).toFixed(1)}M` : n >= 1e3 ? `$${(n / 1e3).toFixed(0)}K` : `$${n}`;
 
 // ═══════════════════════════════════════════
 // STAR DISPLAY — Full stars, discrete steps
@@ -388,6 +389,7 @@ export default function CombinedLot() {
   const hypeInternal = useStore(s => s.hypeInternal);
   const dannyLastMessage = useStore(s => s.dannyLastMessage);
   const novaState = useStore(s => s.novaState);
+  const ledger = useStore(s => s.ledger);
 
   // ── Store actions ──
   const buildOnPlot = useStore(s => s.buildOnPlot);
@@ -422,12 +424,15 @@ export default function CombinedLot() {
     .map(f => ({
       title: f.title || `Film #${f.number}`,
       genre: f.genre,
-      income: f.verdict === 'blockbuster' ? 6000 : 4000,
-      cost: f.verdict === 'blockbuster' ? 30000 : 15000,
+      income: f.verdict === 'blockbuster' ? 6_000_000 : 4_000_000,
+      cost: f.verdict === 'blockbuster' ? 30_000_000 : 15_000_000,
     }));
 
-  // Nova headline (stub — full integration in Phase 6)
-  const novaHeadline = novaState?.introduced ? null : null;
+  // Nova headline — computed from dialogue engine
+  const novaHeadline = useMemo(() => {
+    if (!novaState?.introduced) return null;
+    return getNovaHeadline({ ledger, film: filmNumber });
+  }, [novaState, ledger, filmNumber]);
 
   // Danny text (stub — full integration in Phase 6)
   const dannyText = dannyLastMessage || null;

@@ -5,8 +5,10 @@
 import { useState, useEffect } from 'react';
 import useStore from '../../lib/pacific-dreams/store';
 import { COLORS, MONO, DISPLAY } from './GameStyles';
+import { getDannyText } from '../../lib/pacific-dreams/dialogueEngine';
 import PreProduction from './PreProduction';
 import Production from './Production';
+import Marketing from './Marketing';
 import Premiere from './Premiere';
 import CombinedLot from './CombinedLot';
 
@@ -61,7 +63,7 @@ function StudioHeader() {
           color: funds >= 0 ? COLORS.green : COLORS.red,
           marginTop: 2,
         }}>
-          ${(funds / 1000).toFixed(0)}K
+          {funds >= 1e9 ? `$${(funds / 1e9).toFixed(1)}B` : funds >= 1e6 ? `$${(funds / 1e6).toFixed(0)}M` : funds >= 1e3 ? `$${(funds / 1e3).toFixed(0)}K` : `$${funds}`}
         </div>
       </div>
     </div>
@@ -74,12 +76,14 @@ function TitleScreen() {
   return (
     <div style={{
       flex: 1,
+      minHeight: '100%',
       display: 'flex',
       flexDirection: 'column',
       alignItems: 'center',
       justifyContent: 'center',
       gap: 24,
       padding: 32,
+      boxSizing: 'border-box',
     }}>
       <div style={{
         fontFamily: DISPLAY,
@@ -268,6 +272,12 @@ function RebootOverlay() {
 export default function PacificDreamsContent() {
   const phase = useStore(s => s.phase);
   const rebootRequested = useStore(s => s.rebootRequested);
+  const ledger = useStore(s => s.ledger);
+  const filmNumber = useStore(s => s.filmNumber);
+  const setDannyLastMessage = useStore(s => s.setDannyLastMessage);
+  const novaIntroduced = useStore(s => s.novaIntroduced);
+  const introduceNova = useStore(s => s.introduceNova);
+  const simulateNova = useStore(s => s.simulateNova);
   const [isMobile, setIsMobile] = useState(false);
 
   useEffect(() => {
@@ -276,6 +286,17 @@ export default function PacificDreamsContent() {
     window.addEventListener('resize', checkMobile);
     return () => window.removeEventListener('resize', checkMobile);
   }, []);
+
+  // Compute Danny message + Nova simulation on lot entry
+  useEffect(() => {
+    if (phase === 'lot') {
+      const ctx = { ledger, film: filmNumber };
+      setDannyLastMessage(getDannyText(ctx));
+      // Nova intro on Film 3+
+      if (filmNumber >= 3 && !novaIntroduced) introduceNova();
+      if (novaIntroduced) simulateNova();
+    }
+  }, [phase]);
 
   const screenHeight = isMobile ? SCREEN_HEIGHT_MOBILE : SCREEN_HEIGHT_DESKTOP;
 
@@ -335,10 +356,11 @@ export default function PacificDreamsContent() {
 
       {phase !== 'title' && phase !== 'preprod' && phase !== 'lot' && <StudioHeader />}
 
-      <div style={{ flex: 1, overflowY: 'auto', WebkitOverflowScrolling: 'touch', minHeight: 0 }}>
+      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflowY: 'auto', WebkitOverflowScrolling: 'touch', minHeight: 0 }}>
         {phase === 'title' && <TitleScreen />}
         {phase === 'preprod' && <PreProduction />}
         {phase === 'production' && <Production />}
+        {phase === 'marketing' && <Marketing />}
         {phase === 'premiere' && <Premiere />}
         {phase === 'lot' && <CombinedLot />}
         {phase === 'endgame' && <MigrationPlaceholder phaseName="Endgame" />}

@@ -11,6 +11,8 @@ import useStore, { valueToStars } from '../../lib/pacific-dreams/store';
 import { TAGS } from '../../lib/pacific-dreams/memoryLedger';
 import { checkPremiereConsequences } from '../../lib/pacific-dreams/consequenceEngine';
 import { COLORS, MONO, DISPLAY, sectionLabel } from './GameStyles';
+import { NPCQuote } from './DialogueComponents';
+import { getDialogue, CHARACTERS } from '../../lib/pacific-dreams/dialogueEngine';
 import JuicyButton from './JuicyButton';
 import { useJuice } from '../../lib/pacific-dreams/juice';
 
@@ -19,7 +21,7 @@ import { useJuice } from '../../lib/pacific-dreams/juice';
 // ═══════════════════════════════════════════
 
 const BOX_OFFICE_WEEKS = 12;
-const WEEKLY_REVENUE_PER_THEATER = 703;
+const WEEKLY_REVENUE_PER_THEATER = 25_000; // Calibrated for Hollywood-scale budgets ($15M-$120M)
 
 const REVIEWERS = [
   { name: 'Pacific Herald', skew: 0.066, tone: 'generous' },
@@ -85,7 +87,8 @@ function generateReviews(qualityInternal) {
 
 /**
  * Simulate box office run using internal quality (0-100) and hype (0-100).
- * Scaled down from the old engine which used raw quality scores of 0-420.
+ * Returns earnings in Hollywood dollars (same scale as treasury/budget).
+ * WEEKLY_REVENUE_PER_THEATER = 703 produces earnings in the $10M-$300M+ range.
  */
 function simulateBoxOffice(qualityInternal, hypeInternal, budgetAmount) {
   // Scale internal values to theater counts
@@ -350,6 +353,7 @@ export default function Premiere() {
   const premiereData = useMemo(() => {
     if (!currentFilm) return null;
 
+    // budget in Hollywood dollars (e.g. 15_000_000 = $15M) — same scale as treasury and box office
     const budgetAmount = currentFilm.budget || 15_000_000;
     const isFirstFilm = filmNumber === 0;
 
@@ -389,7 +393,15 @@ export default function Premiere() {
     }
 
     const repChange = calcReputation(budgetAmount, boxOffice.totalEarnings);
-    const profit = boxOffice.totalEarnings - budgetAmount;
+
+    // Profit depends on funding type
+    const revenueShare = currentFilm?.revenueShare ?? 0.5;
+    const playerRevenue = Math.round(boxOffice.totalEarnings * revenueShare);
+    // Self-funded: profit = revenue - budget invested (can be negative)
+    // Distributor: profit = player's share of revenue (pure profit, distributor bore the cost)
+    const profit = currentFilm?.fundingType === 'self'
+      ? playerRevenue - budgetAmount  // both in Hollywood dollars
+      : playerRevenue;
 
     // Check consequence engine
     const consequences = checkPremiereConsequences(
@@ -404,7 +416,19 @@ export default function Premiere() {
       rating: currentFilm.rating || '',
     };
 
-    return { reviews, boxOffice, verdict, repChange, profit, budgetAmount, consequences, filmMeta };
+    // ── NPC reactions (computed once, revealed via CSS opacity) ──
+    const dialogueCtx = { ledger, film: filmNumber + 1 };
+    const reviewKey = reviews.averageScore >= 8 ? 'rave' : reviews.averageScore >= 6 ? 'good' : reviews.averageScore >= 4 ? 'mixed' : 'bad';
+    const boxOfficeKey = boxOffice.totalEarnings >= budgetAmount ? 'profit' : 'loss';
+    const verdictKey = verdict.toLowerCase(); // blockbuster, hit, modest hit, cult classic, flop
+
+    const npcLines = {
+      reviewLine: getDialogue('ricky', 'premiere_reviews', { ...dialogueCtx, key: reviewKey }),
+      boxOfficeLine: getDialogue('arthur', 'premiere_boxoffice', { ...dialogueCtx, key: boxOfficeKey }),
+      verdictLine: getDialogue('max', 'premiere_verdict', { ...dialogueCtx, key: verdictKey }),
+    };
+
+    return { reviews, boxOffice, verdict, repChange, profit, budgetAmount, consequences, filmMeta, npcLines };
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -504,10 +528,24 @@ export default function Premiere() {
       // update talent relations, reset quality/hype
       completeFilm(verdict.toLowerCase(), boxOffice.totalEarnings);
 
-      // Add the studio's share of earnings to treasury
-      // Revenue share: studio keeps 50% of total gross (simplified theatrical split)
-      const studioEarnings = Math.round(boxOffice.totalEarnings * 0.5);
-      addFunds(studioEarnings);
+      // ── Revenue Calculation ──
+      // Revenue share depends on funding type:
+      // - Self-funded: player keeps 100% (they already paid from treasury)
+      // - Distributor-funded: player keeps their negotiated share (40-55%)
+      const revenueShare = currentFilm?.revenueShare ?? 0.5;
+      // All money in Hollywood dollars — single scale, no conversion needed
+      const studioEarnings = Math.round(boxOffice.totalEarnings * revenueShare);
+
+      // Film 1 breakout: guaranteed HIT resets treasury to a playable level
+      // The first film is always a narrative success that launches the studio
+      if (filmNumber === 0) {
+        const breakoutBonus = 150_000_000; // $150M — a healthy starting point
+        const currentFunds = useStore.getState().funds;
+        const targetFunds = Math.max(currentFunds + studioEarnings, breakoutBonus);
+        addFunds(targetFunds - currentFunds);
+      } else {
+        addFunds(studioEarnings);
+      }
 
       // Apply reputation change
       addReputation(repChange);
@@ -529,7 +567,7 @@ export default function Premiere() {
 
   if (!premiereData) return null;
 
-  const { reviews, boxOffice, verdict, profit, budgetAmount, consequences, filmMeta } = premiereData;
+  const { reviews, boxOffice, verdict, profit, budgetAmount, consequences, filmMeta, npcLines } = premiereData;
   const verdictColor = VERDICT_COLORS[verdict] || COLORS.text;
 
   return (
@@ -617,6 +655,14 @@ export default function Premiere() {
         </div>
       </div>
 
+      {/* Ricky reacts to reviews — phase 2+ */}
+      <div style={{
+        opacity: revealPhase >= 2 ? 1 : 0,
+        transition: 'opacity 0.6s ease 0.2s',
+      }}>
+        <NPCQuote character={CHARACTERS.ricky} line={npcLines.reviewLine} />
+      </div>
+
       {/* Box Office — phase 3+ */}
       <div style={{
         opacity: revealPhase >= 3 ? 1 : 0,
@@ -655,7 +701,9 @@ export default function Premiere() {
             opacity: revealPhase >= 4 ? 1 : 0,
             transition: 'opacity 0.4s ease',
           }}>
-            <span style={{ fontSize: 9, color: COLORS.textDim }}>PROFIT</span>
+            <span style={{ fontSize: 9, color: COLORS.textDim }}>
+              {currentFilm?.fundingType === 'distributor' ? `YOUR SHARE (${Math.round((currentFilm?.revenueShare || 0.5) * 100)}%)` : 'PROFIT'}
+            </span>
             <span style={{
               fontSize: 12,
               fontWeight: 700,
@@ -666,6 +714,14 @@ export default function Premiere() {
             </span>
           </div>
         </div>
+      </div>
+
+      {/* Arthur reacts to box office — phase 4+ */}
+      <div style={{
+        opacity: revealPhase >= 4 ? 1 : 0,
+        transition: 'opacity 0.6s ease 0.2s',
+      }}>
+        <NPCQuote character={CHARACTERS.arthur} line={npcLines.boxOfficeLine} />
       </div>
 
       {/* Verdict — phase 5+ */}
@@ -725,6 +781,14 @@ export default function Premiere() {
             </div>
           </>
         )}
+      </div>
+
+      {/* Max reacts to verdict — phase 6+ */}
+      <div style={{
+        opacity: revealPhase >= 6 ? 1 : 0,
+        transition: 'opacity 0.6s ease 0.3s',
+      }}>
+        <NPCQuote character={CHARACTERS.max} line={npcLines.verdictLine} />
       </div>
 
       {/* Consequences — post-verdict events */}

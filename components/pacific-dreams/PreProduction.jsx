@@ -10,43 +10,15 @@ import useStore from '../../lib/pacific-dreams/store';
 import { TAGS } from '../../lib/pacific-dreams/memoryLedger';
 import { COLORS, MONO, DISPLAY } from './GameStyles';
 import { getFirstGameRestrictions, rigFirstGameTrends } from '../../lib/pacific-dreams/consequenceEngine';
+import { TypewriterText, DialogueBox } from './DialogueComponents';
+import { getDialogue, CHARACTERS, DIALOGUE_BANKS } from '../../lib/pacific-dreams/dialogueEngine';
 
 // ═══════════════════════════════════════════
 // DATA (inline — extract to talentData/pitchData later)
 // ═══════════════════════════════════════════
 
-const TEAM = {
-  development: { title:'THE NUMBERS GIRL', role:'Head of Development', icon:'👩‍💼',
-    lines: {
-      greeting:["Morning, boss. I crunched last weekend's numbers.","Got the latest audience data. You'll want to see this.","The trades are buzzing. Here's what I'm hearing."],
-      hot:["The audience is starving for this. Smart move.","Timing couldn't be better. This genre is on fire.","The data backs you up. Green across the board."],
-      cold:["Gutsy. The market's ice cold on this right now.","Going against the grain? I respect it. Risky though.","The numbers say no. But numbers aren't everything."],
-      warm:["Solid. Not flashy, but there's an audience.","Steady pick. Won't blow up, won't bomb.","Safe. Sometimes safe is smart."],
-      greenlight:["I believe in this one. Let's make it happen.","The package is strong. I'd greenlight it.","Everything checks out on my end. Your call, boss."],
-    }},
-  writer: { title:'THE SCRIBE', role:'Head Writer', icon:'✍️',
-    lines: {
-      greeting:["I've been up all night. Three pitches. All gold.","The muse visited. I've got ideas.","I see the movie already. Let me paint the picture."],
-      react:["THAT'S the one. I can feel it in my bones.","Yes. YES. This is the film we were born to make.","Good eye. That's got award season written all over it."],
-    }},
-  finance: { title:'THE SUIT', role:'Chief Financial Officer', icon:'💼',
-    lines: {
-      greeting:["Let's talk numbers. What kind of budget are we looking at?","I've seen the concept. Now show me the math."],
-      approved:["The numbers work. Don't make me regret this.","Approved. But I want weekly reports on my desk."],
-      denied:["I can't justify that number. Here's what I CAN give you.","That's a no from me. But I'll meet you partway."],
-      repHigh:"Your track record speaks for itself. Take what you need.",
-      indieApproved:["Lean budget. No objections.","Indie range? Fine. Low risk, your call."],
-    }},
-  agent: { title:'THE CONNECTOR', role:'Talent Agent', icon:'🕶️',
-    lines: {
-      greeting:["Baby! I made some calls. Got people VERY interested.","Sweetheart, you are not going to BELIEVE who I found."],
-      present:["Three options. All different vibes. Your call.","I've got range for you. Pick your poison."],
-      demand:["Now, there's a catch. You know how it is at this level.","Small wrinkle. Nothing we can't handle, sweetheart."],
-      refusal:["Bad news, baby. They passed. Said the project isn't right.","No dice. But listen, I've got someone BETTER."],
-      chemistry:["Oh, and heads up — these two have HISTORY together.","Put these two in a room? Magic happens."],
-      done:["That's a WRAP on casting, baby. What a lineup.","Chef's kiss. This ensemble? Awards bait."],
-    }},
-};
+// Character helper — convert CHARACTERS entry to PVM content shape
+const charToPvm = (c) => ({ type:'character', icon: c.icon, title: c.title, role: c.role });
 
 const pick = arr => arr[Math.floor(Math.random() * arr.length)];
 
@@ -134,27 +106,117 @@ const CHEMISTRY = [
   { pair:['The Auteur','The Scene Stealer'], label:'Awards Bait', icon:'🏆', q:18, h:5, flavor:'The kind of pairing that makes Oscar voters weep.' },
 ];
 
-const NEGOT_Q = {
-  studio: [
-    { prompt:"That's a significant outlay. Why should the board say yes?", options:[
-      { text:"The market data backs us up. This genre is hot right now.", cond:'market_hot', ok:"The numbers check out. Approved.", fail:"The data says otherwise. You sure?" },
-      { text:"My track record speaks for itself.", cond:'rep_pos', ok:"Fair point. Your films have been performing.", fail:"What track record? Let's not get ahead of ourselves." },
-      { text:"The talent attached makes this a guaranteed draw.", cond:'bluff', ok:"Star power does open wallets. Alright.", fail:"I called the agent. Nobody's attached yet. Don't play me." },
-    ]},
-  ],
-  blockbuster: [
-    { prompt:"A hundred and twenty million. Convince me this isn't a vanity project.", options:[
-      { text:"This genre is ON FIRE right now.", cond:'market_hot', ok:"I've seen the same data. The window is open. Fine.", fail:"The market says the opposite. Come back with real data." },
-      { text:"I've built this studio from nothing. Trust the vision.", cond:'rep_high', ok:"You've earned the benefit of the doubt.", fail:"Vision is nice. Profits are nicer. I need more." },
-      { text:"The competition has nothing this quarter. We own the release.", cond:'bluff', ok:"I checked — you're right. Clear runway. Approved.", fail:"Two tentpoles open the same week. Did you even check?" },
-    ]},
-    { prompt:"Even if I approve this, the board will want to know: what's the ceiling?", options:[
-      { text:"Blockbusters in this genre regularly clear $300M worldwide.", cond:'market_warm', ok:"The upside is certainly there. I'll sign off.", fail:"Not in this climate. Those days are behind us." },
-      { text:"Franchise potential. This isn't one movie — it's a universe.", cond:'always', ok:"Now you're speaking my language. Sequels. Merch. Parks.", fail:null },
-      { text:"The talent lineup alone guarantees opening weekend.", cond:'bluff', ok:"Star power is worth something. Fine. Greenlit.", fail:"What talent? I don't see names that move the needle." },
-    ]},
-  ],
-};
+// ═══════════════════════════════════════════
+// DISTRIBUTOR DATA
+// ═══════════════════════════════════════════
+
+const DISTRIBUTORS = [
+  { name: 'Pinnacle Films',      personality: 'prestige',   riskTolerance: 'low',    minRep: 5 },
+  { name: 'Meridian Pictures',   personality: 'commercial', riskTolerance: 'medium', minRep: 2 },
+  { name: 'Apex Distribution',   personality: 'indie',      riskTolerance: 'high',   minRep: -5 },
+  { name: 'Iron Gate Studios',   personality: 'blockbuster', riskTolerance: 'low',   minRep: 5 },
+  { name: 'Lantern Entertainment', personality: 'scrappy',  riskTolerance: 'high',   minRep: -10 },
+];
+
+function generateDistributorOffers(reputation, filmNumber, history, ledger) {
+  const lastV = history.length > 0 ? history[history.length - 1]?.verdict : null;
+  const eligible = DISTRIBUTORS.filter(d => reputation >= d.minRep);
+
+  if (eligible.length === 0) return []; // No one's interested
+
+  // Film 2: 1 offer, smaller distributors only
+  // Film 3-4: up to 2 offers
+  // Film 5+: up to 2, can include prestige if rep is high
+  let pool = [...eligible];
+  if (filmNumber <= 1) {
+    pool = pool.filter(d => d.riskTolerance === 'high');
+  } else if (filmNumber <= 3) {
+    pool = pool.filter(d => d.riskTolerance !== 'low' || reputation >= 8);
+  }
+
+  // After a flop, reduce pool
+  if (lastV === 'flop') {
+    pool = pool.filter(d => d.riskTolerance === 'high');
+  }
+
+  if (pool.length === 0) return [];
+
+  // Shuffle and pick 1-2
+  const shuffled = [...pool].sort(() => Math.random() - 0.5);
+  const count = filmNumber <= 1 ? 1 : Math.min(2, shuffled.length);
+  const selected = shuffled.slice(0, count);
+
+  return selected.map(d => {
+    // Budget in Hollywood dollars (e.g. 60_000_000 = $60M)
+    let baseBudget;
+    if (d.personality === 'blockbuster' || d.personality === 'prestige') {
+      baseBudget = 60_000_000 + Math.min(reputation, 15) * 4_000_000; // $60M-$120M
+    } else if (d.personality === 'commercial') {
+      baseBudget = 30_000_000 + Math.min(reputation, 10) * 3_000_000; // $30M-$60M
+    } else {
+      baseBudget = 10_000_000 + Math.min(reputation, 10) * 2_000_000; // $10M-$30M
+    }
+
+    // Post-blockbuster bonus
+    if (lastV === 'blockbuster') baseBudget = Math.round(baseBudget * 1.2);
+    // Post-flop penalty
+    if (lastV === 'flop') baseBudget = Math.round(baseBudget * 0.7);
+
+    // Round to nearest million
+    baseBudget = Math.round(baseBudget / 1_000_000) * 1_000_000;
+
+    // Revenue share: player keeps 40-55% depending on deal
+    const share = d.riskTolerance === 'high' ? 0.55 : d.riskTolerance === 'medium' ? 0.48 : 0.42;
+
+    // Optional condition
+    let condition = null;
+    if (d.personality === 'prestige' && Math.random() > 0.5) condition = 'PG-13 or R only';
+    if (d.personality === 'commercial' && Math.random() > 0.6) condition = 'No NC-17';
+
+    return {
+      distributorName: d.name,
+      personality: d.personality,
+      budget: baseBudget,
+      revenueShare: share,
+      condition,
+    };
+  });
+}
+
+// ═══════════════════════════════════════════
+// SELF-FUND TIER GENERATION
+// All amounts in Hollywood dollars (e.g. 15_000_000 = $15M)
+// ═══════════════════════════════════════════
+
+function getSelfFundTiers(treasury, builtBuildings) {
+  const tiers = [];
+  // Always offer indie (unless you can't afford it)
+  if (treasury >= 15_000_000) {
+    tiers.push({ tier: 'indie', label: 'INDIE', amount: 15_000_000, desc: 'Lean and scrappy.', icon: '🎥' });
+  } else if (treasury >= 5_000_000) {
+    tiers.push({ tier: 'micro', label: 'SHOESTRING', amount: Math.round(treasury * 0.8), desc: 'Whatever we can scrape together.', icon: '📹' });
+  }
+  // Studio tier
+  if (treasury >= 60_000_000 && builtBuildings.includes('soundstage')) {
+    tiers.push({ tier: 'studio', label: 'STUDIO', amount: 60_000_000, desc: 'Proper production value.', icon: '🎬' });
+  } else if (treasury >= 60_000_000) {
+    tiers.push({ tier: 'studio', label: 'STUDIO', amount: 60_000_000, desc: 'Proper production value.', icon: '🎬' });
+  }
+  // Blockbuster tier (requires Sound Stage)
+  if (treasury >= 120_000_000 && builtBuildings.includes('soundstage')) {
+    tiers.push({ tier: 'blockbuster', label: 'BLOCKBUSTER', amount: 120_000_000, desc: 'Tentpole territory.', icon: '💰' });
+  }
+  return tiers;
+}
+
+// Film 1 allocation options (percentage of treasury, no building requirements)
+function getFilm1Allocations(treasury) {
+  return [
+    { label: 'BARE BONES', pct: 0.4, amount: Math.round(treasury * 0.4), desc: 'Leave plenty in reserve.' },
+    { label: 'REASONABLE', pct: 0.6, amount: Math.round(treasury * 0.6), desc: 'A balanced bet.' },
+    { label: 'ALL IN', pct: 0.85, amount: Math.round(treasury * 0.85), desc: 'Swing for the fences.' },
+  ];
+}
 
 // ═══════════════════════════════════════════
 // MARKET TREND GENERATOR
@@ -268,8 +330,9 @@ function PVMMonitor({ on, content, onToggle }) {
   </div>;
 }
 
-function ScoreBar({ funds, reputation, filmCount }) {
-  const fmt = n => n >= 1e6 ? `$${(n / 1e6).toFixed(1)}M` : n >= 1e3 ? `$${(n / 1e3).toFixed(0)}K` : `$${n}`;
+function ScoreBar({ funds, reputation, filmCount, movieBudgetRemaining, fundingType }) {
+  const fmt = n => n >= 1e9 ? `$${(n / 1e9).toFixed(1)}B` : n >= 1e6 ? `$${(n / 1e6).toFixed(1)}M` : n >= 1e3 ? `$${(n / 1e3).toFixed(0)}K` : `$${n}`;
+  const showFilmBudget = movieBudgetRemaining != null && movieBudgetRemaining > 0;
   return <div style={{ height:'100%', background:'rgba(255,255,255,0.03)', border:'1px solid rgba(255,255,255,0.06)', borderRadius:8, padding:'8px 12px', display:'flex', flexDirection:'column', justifyContent:'space-between' }}>
     <div>
       <div style={{ fontFamily:DISPLAY, fontSize:10, fontWeight:900, color:'#fff', letterSpacing:2 }}>PACIFIC DREAMS</div>
@@ -277,52 +340,22 @@ function ScoreBar({ funds, reputation, filmCount }) {
     </div>
     <div style={{ display:'flex', gap:0, alignItems:'flex-end' }}>
       <div style={{ flex:1 }}>
-        <div style={{ fontFamily:MONO, fontSize:6, color:'rgba(255,255,255,0.2)', letterSpacing:1 }}>FUNDS</div>
-        <div style={{ fontFamily:MONO, fontSize:15, fontWeight:700, color:COLORS.green, textShadow:`0 0 6px ${COLORS.green}44`, marginTop:1 }}>{fmt(funds)}</div>
+        <div style={{ fontFamily:MONO, fontSize:6, color:'rgba(255,255,255,0.2)', letterSpacing:1 }}>TREASURY</div>
+        <div style={{ fontFamily:MONO, fontSize:showFilmBudget ? 12 : 15, fontWeight:700, color:COLORS.green, textShadow:`0 0 6px ${COLORS.green}44`, marginTop:1 }}>{fmt(funds)}</div>
       </div>
-      <div style={{ width:1, height:22, background:'rgba(255,255,255,0.05)', margin:'0 8px' }} />
+      {showFilmBudget && <>
+        <div style={{ width:1, height:22, background:'rgba(255,255,255,0.05)', margin:'0 4px' }} />
+        <div style={{ flex:1 }}>
+          <div style={{ fontFamily:MONO, fontSize:6, color:'rgba(255,255,255,0.2)', letterSpacing:1 }}>FILM BUDGET</div>
+          <div style={{ fontFamily:MONO, fontSize:12, fontWeight:700, color:COLORS.amber, marginTop:1 }}>{fmt(movieBudgetRemaining)}</div>
+        </div>
+      </>}
+      <div style={{ width:1, height:22, background:'rgba(255,255,255,0.05)', margin:'0 4px' }} />
       <div>
         <div style={{ fontFamily:MONO, fontSize:6, color:'rgba(255,255,255,0.2)', letterSpacing:1 }}>REP</div>
-        <div style={{ fontFamily:MONO, fontSize:15, fontWeight:700, color:reputation >= 0 ? COLORS.orange : COLORS.red, marginTop:1 }}>{reputation >= 0 ? `+${reputation}` : reputation}</div>
+        <div style={{ fontFamily:MONO, fontSize:showFilmBudget ? 12 : 15, fontWeight:700, color:reputation >= 0 ? COLORS.orange : COLORS.red, marginTop:1 }}>{reputation >= 0 ? `+${reputation}` : reputation}</div>
       </div>
     </div>
-  </div>;
-}
-
-// ═══════════════════════════════════════════
-// TYPEWRITER TEXT
-// ═══════════════════════════════════════════
-function TypewriterText({ text, speed = 25, onDone }) {
-  const [shown, setShown] = useState('');
-  const idx = useRef(0);
-  useEffect(() => {
-    setShown(''); idx.current = 0;
-    const t = setInterval(() => {
-      idx.current++;
-      if (idx.current >= text.length) { clearInterval(t); onDone?.(); }
-      setShown(text.slice(0, idx.current));
-    }, speed);
-    return () => clearInterval(t);
-  }, [text]);
-  return <span>{shown}<span style={{ opacity:0.4, animation:'blink 0.8s step-end infinite' }}>▌</span></span>;
-}
-
-// ═══════════════════════════════════════════
-// CHARACTER DIALOGUE BOX
-// ═══════════════════════════════════════════
-function DialogueBox({ character, line, children }) {
-  return <div style={{ padding:'10px 12px', borderBottom:'1px solid rgba(255,255,255,0.04)', flexShrink:0 }}>
-    <div style={{ display:'flex', alignItems:'center', gap:8, marginBottom:6 }}>
-      <div style={{ fontSize:18 }}>{character.icon}</div>
-      <div>
-        <div style={{ fontFamily:MONO, fontSize:9, color:COLORS.orange, letterSpacing:1 }}>{character.title}</div>
-        <div style={{ fontFamily:MONO, fontSize:7, color:'rgba(255,255,255,0.3)' }}>{character.role}</div>
-      </div>
-    </div>
-    <div style={{ fontFamily:MONO, fontSize:10, color:'rgba(255,255,255,0.55)', lineHeight:1.6, fontStyle:'italic', minHeight:32 }}>
-      "<TypewriterText text={line} />"
-    </div>
-    {children}
   </div>;
 }
 
@@ -344,7 +377,7 @@ function BeatDots({ current, labels }) {
 function TalentCard({ talent, selected, refused, onSelect }) {
   const tierColor = { a:COLORS.orange, b:COLORS.amber, c:'#888', no:'#555' };
   const tierLabel = { a:'A-LIST', b:'B-LIST', c:'C-LIST', no:'NO-NAME' };
-  const fmt = n => n >= 1e6 ? `$${(n / 1e6).toFixed(0)}M` : n >= 1e3 ? `$${(n / 1e3).toFixed(0)}K` : `$${n}`;
+  const fmt = n => n >= 1e9 ? `$${(n / 1e9).toFixed(1)}B` : n >= 1e6 ? `$${(n / 1e6).toFixed(0)}M` : n >= 1e3 ? `$${(n / 1e3).toFixed(0)}K` : `$${n}`;
 
   return <div onClick={() => !refused && onSelect?.(talent)} style={{
     padding:'10px 12px', borderRadius:8, cursor:refused ? 'not-allowed' : 'pointer',
@@ -389,6 +422,11 @@ export default function PreProduction() {
   const acceptDemand = useStore(s => s.acceptDemand);
   const denyDemand = useStore(s => s.denyDemand);
   const hasBuilding = useStore(s => s.hasBuilding);
+  const history = useStore(s => s.history);
+  const setFunding = useStore(s => s.setFunding);
+  const spendMovieBudget = useStore(s => s.spendMovieBudget);
+  const treasuryDip = useStore(s => s.treasuryDip);
+  const currentFilm = useStore(s => s.currentFilm);
 
   // ── First-game restrictions ──
   const builtBuildings = useStore(s => s.getBuiltBuildings)();
@@ -404,27 +442,33 @@ export default function PreProduction() {
   const [selectedPitch, setSelectedPitch] = useState(null);
   const [rating, setRating] = useState(null);
   const [budgetTier, setBudgetTier] = useState(null);
-  const [negotiating, setNegotiating] = useState(null);
-  const [negoResult, setNegoResult] = useState(null);
-  const [negoStep, setNegoStep] = useState(0);
+  // Two-wallet funding state
+  const [fundingSubPhase, setFundingSubPhase] = useState('fork'); // fork | distributor | selffund | film1
+  const [distributorOffers, setDistributorOffers] = useState([]);
+  const [selectedOffer, setSelectedOffer] = useState(null);
+  const [fundingConfirmed, setFundingConfirmed] = useState(false);
   const [cast, setCast] = useState({ director:null, lead:null, support:null });
   const [castingRole, setCastingRole] = useState('director');
   const [demandPopup, setDemandPopup] = useState(null);
+  const [treasuryDipPopup, setTreasuryDipPopup] = useState(null); // { talent, shortfall, demandAccepted }
   const [chemistryFound, setChemistryFound] = useState([]);
   const [greenlightFlash, setGreenlightFlash] = useState(false);
 
+  // Dialogue engine context
+  const dialogueCtx = { ledger, film: filmNumber + 1 };
+
   // PVM content
-  const [pvmContent, setPvmContent] = useState({ type:'character', icon:TEAM.development.icon, title:TEAM.development.title, role:TEAM.development.role });
+  const [pvmContent, setPvmContent] = useState(charToPvm(CHARACTERS.carmen));
 
   // Dialogue
-  const [dialogue, setDialogue] = useState(pick(TEAM.development.lines.greeting));
+  const [dialogue, setDialogue] = useState(() => getDialogue('carmen', 'greeting', dialogueCtx));
 
   const BEAT_LABELS = ['MARKET','CONCEPT','MONEY','TALENT','GREEN'];
 
   // ─── Helpers ───
   const trendColor = t => t === 'hot' ? COLORS.red : t === 'warm' ? COLORS.amber : COLORS.blue;
   const trendIcon = t => t === 'hot' ? '🔥 HOT' : t === 'warm' ? '── WARM' : '🧊 COLD';
-  const fmt = n => n >= 1e6 ? `$${(n / 1e6).toFixed(0)}M` : n >= 1e3 ? `$${(n / 1e3).toFixed(0)}K` : `$${n}`;
+  const fmt = n => n >= 1e9 ? `$${(n / 1e9).toFixed(1)}B` : n >= 1e6 ? `$${(n / 1e6).toFixed(0)}M` : n >= 1e3 ? `$${(n / 1e3).toFixed(0)}K` : `$${n}`;
 
   // ─── Tier locking (first-game + buildings) ───
   function isTierLocked(tier) {
@@ -446,7 +490,7 @@ export default function PreProduction() {
   function selectGenre(g) {
     setGenre(g);
     const trend = trends[g.id];
-    setDialogue(pick(TEAM.development.lines[trend] || TEAM.development.lines.warm));
+    setDialogue(getDialogue('carmen', 'genre_react', { ...dialogueCtx, key: trend || 'warm' }));
     const pool = (PITCHES[g.id] || PITCHES.action).sort(() => Math.random() - 0.5).slice(0, 2);
     // If Writers Bungalow built, show 3 pitches
     if (hasBuilding('writers')) {
@@ -469,7 +513,7 @@ export default function PreProduction() {
   // ─── BEAT 1: Concept ───
   function selectPitch(p) {
     setSelectedPitch(p);
-    setDialogue(pick(TEAM.writer.lines.react));
+    setDialogue(getDialogue('ricky', 'pitch_react', dialogueCtx));
     setPvmContent({ type:'scene', scene:p.scene, label:p.title });
 
     // ── Log memory ──
@@ -477,97 +521,128 @@ export default function PreProduction() {
   }
   function selectRating(r) {
     setRating(r);
-    setPvmContent({ type:'character', icon:TEAM.finance.icon, title:TEAM.finance.title, role:TEAM.finance.role });
-    setDialogue(pick(TEAM.finance.lines.greeting));
 
     // ── Log memory ──
     logMemory(filmNumber, 'concept', TAGS.RATING_CHOSEN, { detail: r });
 
-    setTimeout(() => setBeat(2), 600);
+    setTimeout(() => {
+      setBeat(2);
+      initFundingBeat();
+    }, 600);
   }
 
-  // ─── BEAT 2: Money ───
-  function selectBudget(tier) {
-    if (tier === 'indie') {
-      setBudgetTier('indie');
-      setDialogue(pick(TEAM.finance.lines.indieApproved));
-      setPvmContent({ type:'money', amount:'$15M' });
+  // ─── BEAT 2: Money (Two-Wallet Funding System) ───
 
-      // ── Log memory ──
-      logMemory(filmNumber, 'money', TAGS.BUDGET_TIER, { detail: 'indie' });
-      logMemory(filmNumber, 'money', TAGS.BUDGET_AUTO_APPROVED, {});
-
-      setTimeout(() => startCasting(), 800);
-    } else if (tier === 'studio') {
-      setBudgetTier('studio');
-      const q = NEGOT_Q.studio[0];
-      setNegotiating(q);
-      setDialogue(q.prompt);
-      setPvmContent({ type:'money', amount:'$60M' });
-
-      logMemory(filmNumber, 'money', TAGS.BUDGET_TIER, { detail: 'studio' });
+  // Initialize Beat 2 state when entering
+  function initFundingBeat() {
+    if (filmNumber === 0) {
+      // Film 1: always self-funded, Arthur still handles money talk
+      setFundingSubPhase('film1');
+      setPvmContent(charToPvm(CHARACTERS.arthur));
+      setDialogue(getDialogue('arthur', 'greeting', { ...dialogueCtx, film: 1 }));
     } else {
-      setBudgetTier('blockbuster');
-      const q = NEGOT_Q.blockbuster[0];
-      setNegotiating(q);
-      setNegoStep(0);
-      setDialogue(q.prompt);
-      setPvmContent({ type:'money', amount:'$120M' });
-
-      logMemory(filmNumber, 'money', TAGS.BUDGET_TIER, { detail: 'blockbuster' });
+      // Film 2+: Arthur presents the fork
+      setFundingSubPhase('fork');
+      setPvmContent(charToPvm(CHARACTERS.arthur));
+      setDialogue(getDialogue('arthur', 'funding_fork', dialogueCtx));
     }
   }
 
-  function answerNegotiation(opt) {
-    let success = false;
-    if (opt.cond === 'market_hot') success = trends[genre?.id] === 'hot';
-    else if (opt.cond === 'market_warm') success = trends[genre?.id] !== 'cold';
-    else if (opt.cond === 'rep_pos') success = reputation > 0;
-    else if (opt.cond === 'rep_high') success = reputation >= 5;
-    else if (opt.cond === 'bluff') success = Math.random() > 0.35;
-    else if (opt.cond === 'always') success = true;
+  // Player picks "Find a Distributor"
+  function chooseFindDistributor() {
+    const offers = generateDistributorOffers(reputation, filmNumber, history, ledger);
+    setDistributorOffers(offers);
+    setFundingSubPhase('distributor');
 
-    // ── Log bluff attempts ──
-    if (opt.cond === 'bluff') {
-      logMemory(filmNumber, 'money', TAGS.BUDGET_BLUFFED, { meta: { success } });
-      if (!success) logMemory(filmNumber, 'money', TAGS.BUDGET_BLUFF_FAIL, {});
-    }
-
-    if (success) {
-      setDialogue(opt.ok);
-      setNegoResult('approved');
-      // If blockbuster and more questions
-      if (budgetTier === 'blockbuster' && negoStep < NEGOT_Q.blockbuster.length - 1) {
-        setTimeout(() => {
-          const next = NEGOT_Q.blockbuster[negoStep + 1];
-          setNegoStep(negoStep + 1);
-          setNegotiating(next);
-          setDialogue(next.prompt);
-          setNegoResult(null);
-        }, 1200);
-        return;
-      }
-      setDialogue(pick(TEAM.finance.lines.approved));
-      setTimeout(() => startCasting(), 1000);
+    if (offers.length > 0) {
+      setDialogue(getDialogue('arthur', 'distributor_present', { ...dialogueCtx, key: 'offers' }));
     } else {
-      setDialogue(opt.fail || "I'm not convinced.");
-      setNegoResult('denied');
-      if (budgetTier === 'blockbuster') {
-        setBudgetTier('studio');
-        setPvmContent({ type:'money', amount:'$60M' });
-        setDialogue(pick(TEAM.finance.lines.denied));
-        logMemory(filmNumber, 'money', TAGS.BUDGET_DOWNGRADED, { detail: 'blockbuster_to_studio' });
-      }
-      setTimeout(() => startCasting(), 1200);
+      setDialogue(getDialogue('arthur', 'distributor_present', { ...dialogueCtx, key: 'none' }));
+      // Log rejection
+      logMemory(filmNumber, 'money', TAGS.DISTRIBUTOR_REJECTED, {});
+      // Auto-redirect to self-fund after delay
+      setTimeout(() => {
+        setFundingSubPhase('selffund');
+        setDialogue(getDialogue('arthur', 'distributor_present', { ...dialogueCtx, key: 'rejected' }));
+      }, 2000);
     }
-    setNegotiating(null);
+  }
+
+  // Player picks "Self-Fund"
+  function chooseSelfFund() {
+    setFundingSubPhase('selffund');
+    setPvmContent({ type:'money', amount:fmt(funds) });
+    setDialogue(getDialogue('arthur', 'self_fund', { ...dialogueCtx, key: 'generic' }));
+  }
+
+  // Accept a distributor offer (budget in Hollywood dollars: 60_000_000 = $60M)
+  function acceptDistributor(offer) {
+    setSelectedOffer(offer);
+    setBudgetTier(offer.budget >= 100_000_000 ? 'blockbuster' : offer.budget >= 40_000_000 ? 'studio' : 'indie');
+    setPvmContent({ type:'money', amount:fmt(offer.budget) });
+    setDialogue(getDialogue('arthur', 'distributor_present', { ...dialogueCtx, key: 'good' }));
+
+    // Set funding in store
+    setFunding('distributor', offer.budget, offer.distributorName, offer.revenueShare);
+
+    // Log memory
+    logMemory(filmNumber, 'money', TAGS.FUNDING_DISTRIBUTOR, {
+      detail: offer.distributorName,
+      meta: { budget: offer.budget, revenueShare: offer.revenueShare },
+    });
+    logMemory(filmNumber, 'money', TAGS.BUDGET_TIER, {
+      detail: offer.budget >= 100_000_000 ? 'blockbuster' : offer.budget >= 40_000_000 ? 'studio' : 'indie',
+    });
+
+    setFundingConfirmed(true);
+    setTimeout(() => startCasting(), 1200);
+  }
+
+  // Reject all distributor offers → fall through to self-fund
+  function rejectDistributors() {
+    logMemory(filmNumber, 'money', TAGS.DISTRIBUTOR_REJECTED, {});
+    setDialogue(getDialogue('arthur', 'distributor_present', { ...dialogueCtx, key: 'rejected' }));
+    setTimeout(() => {
+      setFundingSubPhase('selffund');
+      setPvmContent({ type:'money', amount:fmt(funds) });
+    }, 800);
+  }
+
+  // Confirm self-fund allocation — amount in Hollywood dollars (e.g. 15_000_000 = $15M)
+  function confirmSelfFund(amount) {
+    const tier = amount >= 100_000_000 ? 'blockbuster' : amount >= 40_000_000 ? 'studio' : 'indie';
+    setBudgetTier(tier);
+    setPvmContent({ type:'money', amount:fmt(amount) });
+
+    // Set funding in store (self-fund: 100% revenue share)
+    setFunding('self', amount, null, 1.0);
+
+    // Log memory
+    logMemory(filmNumber, 'money', TAGS.FUNDING_SELF, { meta: { budget: amount } });
+    logMemory(filmNumber, 'money', TAGS.BUDGET_TIER, { detail: tier });
+
+    // Check if self-fund streak
+    const selfCount = ledger.filter(e => e.tag === TAGS.FUNDING_SELF).length + 1;
+    if (selfCount >= 3) {
+      logMemory(filmNumber, 'money', TAGS.ALWAYS_SELF_FUNDED, {});
+    }
+
+    setDialogue(getDialogue('arthur', 'self_fund', { ...dialogueCtx, key: 'confirmed' }));
+
+    setFundingConfirmed(true);
+    setTimeout(() => startCasting(), 1000);
+  }
+
+  // Film 1 allocation — amount is in Hollywood dollars
+  function confirmFilm1Allocation(alloc) {
+    confirmSelfFund(alloc.amount);
   }
 
   function startCasting() {
     setBeat(3);
     setCastingRole('director');
-    setDialogue(pick(TEAM.agent.lines.greeting));
-    setPvmContent({ type:'character', icon:TEAM.agent.icon, title:TEAM.agent.title, role:TEAM.agent.role });
+    setDialogue(getDialogue('max', 'greeting', dialogueCtx));
+    setPvmContent(charToPvm(CHARACTERS.max));
   }
 
   // ─── BEAT 3: Talent ───
@@ -593,10 +668,55 @@ export default function PreProduction() {
   function selectTalent(t) {
     if (t.demand) {
       setDemandPopup(t);
-      setDialogue(pick(TEAM.agent.lines.demand));
+      setDialogue(getDialogue('max', 'demand', dialogueCtx));
       return;
     }
-    confirmTalent(t, false);
+    // Check affordability before confirming
+    checkAffordabilityAndConfirm(t, false);
+  }
+
+  // Check if the talent's cost fits in the movie budget, offer treasury dip if not
+  function checkAffordabilityAndConfirm(t, demandAccepted) {
+    const cost = Math.round(t.cost || 0); // talent data is in Hollywood dollars (e.g. 14e6 = $14M) — same scale as everything else
+    const remaining = useStore.getState().currentFilm?.movieBudgetRemaining || 0;
+
+    if (cost <= remaining) {
+      // Affordable — deduct from movie budget and proceed
+      if (cost > 0) spendMovieBudget(cost);
+      confirmTalent(t, demandAccepted);
+    } else if (cost > remaining && funds > 0) {
+      // Shortfall — offer treasury dip
+      const shortfall = cost - remaining;
+      if (shortfall <= funds) {
+        setTreasuryDipPopup({ talent: t, shortfall, cost, remaining, demandAccepted });
+        setDialogue(`That's ${fmt(cost)}. You've only got ${fmt(remaining)} left in the film budget.\nCover the ${fmt(shortfall)} difference from Pacific Dreams' treasury?`);
+      } else {
+        // Can't afford even with treasury
+        setDialogue(`Can't afford ${t.archetype}. Not enough in the film budget or treasury.`);
+      }
+    } else {
+      // No movie budget AND no treasury
+      setDialogue(`Can't afford ${t.archetype}. Budget's tapped.`);
+    }
+  }
+
+  function acceptTreasuryDip() {
+    if (!treasuryDipPopup) return;
+    const { talent, shortfall, cost, remaining, demandAccepted } = treasuryDipPopup;
+    // Spend what's left in movie budget, then dip into treasury for the rest
+    if (remaining > 0) spendMovieBudget(remaining);
+    treasuryDip(shortfall);
+    // Log the dip
+    logMemory(filmNumber, 'talent', TAGS.TREASURY_DIP, {
+      actor: talent.archetype, meta: { amount: shortfall, reason: 'casting' },
+    });
+    setTreasuryDipPopup(null);
+    confirmTalent(talent, demandAccepted);
+  }
+
+  function declineTreasuryDip() {
+    setTreasuryDipPopup(null);
+    setDialogue("Pick someone else, then.");
   }
 
   function confirmTalent(t, demandAccepted) {
@@ -624,16 +744,19 @@ export default function PreProduction() {
     const chems = CHEMISTRY.filter(ch => ch.pair.every(p => archetypes.includes(p)));
     if (chems.length > chemistryFound.length) {
       setChemistryFound(chems);
-      setDialogue(pick(TEAM.agent.lines.chemistry) + ` "${chems[chems.length - 1].label}"`);
+      const lastChem = chems[chems.length - 1];
+      const castA = archetypes[archetypes.length - 1] || '?';
+      const castB = lastChem.pair.find(p => p !== castA) || lastChem.pair[0];
+      setDialogue(DIALOGUE_BANKS.MAX.chemistry(castA, castB, lastChem.label));
     } else {
-      setDialogue(pick(TEAM.agent.lines.present));
+      setDialogue(getDialogue('max', 'talent_present', dialogueCtx));
     }
 
     // Next role
     if (castingRole === 'director') { setTimeout(() => setCastingRole('lead'), 600); }
     else if (castingRole === 'lead') { setTimeout(() => setCastingRole('support'), 600); }
     else {
-      setDialogue(pick(TEAM.agent.lines.done));
+      setDialogue(pick(DIALOGUE_BANKS.MAX.casting_done));
 
       // ── Check for all-star or cheap cast ──
       const allTiers = Object.values(newCast).filter(Boolean).map(c => c.tier);
@@ -647,7 +770,7 @@ export default function PreProduction() {
       setTimeout(() => {
         setBeat(4);
         setPvmContent({ type:'greenlight' });
-        setDialogue(pick(TEAM.development.lines.greenlight));
+        setDialogue(getDialogue('carmen', 'greenlight', dialogueCtx));
       }, 800);
     }
   }
@@ -656,16 +779,22 @@ export default function PreProduction() {
   function greenlight() {
     setGreenlightFlash(true);
 
-    // ── Build the film object and push to store ──
-    const budgetAmount = budgetTier === 'blockbuster' ? 120e6 : budgetTier === 'studio' ? 60e6 : 15e6;
+    // ── Build the film object ──
+    // Funding was already set in Beat 2 via setFunding(), which populates
+    // currentFilm with fundingType, movieBudget, movieBudgetRemaining, etc.
+    // We merge genre/pitch/rating/cast onto the existing currentFilm.
+    const storeFilm = useStore.getState().currentFilm;
+    // movieBudget is in Hollywood dollars (e.g. 15_000_000 = $15M). budget is the same scale for box office math.
+    const budget = storeFilm?.movieBudget || (budgetTier === 'blockbuster' ? 120_000_000 : budgetTier === 'studio' ? 60_000_000 : 15_000_000);
     const filmData = {
+      ...(storeFilm || {}), // preserve funding fields from setFunding()
       genre: genre.id,
       genreLabel: genre.label,
       pitch: selectedPitch,
       title: selectedPitch?.title || 'UNTITLED',
       rating,
       budgetTier,
-      budget: budgetAmount,
+      budget, // used by Premiere for box office/verdict calculations — Hollywood dollars
       cast,
       trends: { ...trends },
     };
@@ -689,8 +818,8 @@ export default function PreProduction() {
     adjustQuality(qTotal);
     adjustHype(hTotal);
 
-    // Spend budget from funds
-    useStore.getState().spendFunds(budgetAmount);
+    // NOTE: Budget deduction from treasury already happened in Beat 2 (setFunding)
+    // for self-funded films. Distributor-funded films don't deduct from treasury.
 
     setTimeout(() => {
       setGreenlightFlash(false);
@@ -723,7 +852,7 @@ export default function PreProduction() {
 
       {/* TOP ROW */}
       <div style={{ display:'flex', gap:6, padding:6, height:TOP_H, flexShrink:0, borderBottom:'1px solid #1a1a1c' }}>
-        <div style={{ flex:1 }}><ScoreBar funds={funds} reputation={reputation} filmCount={filmNumber} /></div>
+        <div style={{ flex:1 }}><ScoreBar funds={funds} reputation={reputation} filmCount={filmNumber} movieBudgetRemaining={currentFilm?.movieBudgetRemaining} fundingType={currentFilm?.fundingType} /></div>
         <div style={{ flex:1 }}><PVMMonitor on={pvmOn} content={pvmContent} onToggle={() => setPvmOn(!pvmOn)} /></div>
       </div>
 
@@ -732,7 +861,7 @@ export default function PreProduction() {
 
         {/* ═══ BEAT 0: MARKET ═══ */}
         {beat === 0 && <>
-          <DialogueBox character={TEAM.development} line={dialogue} />
+          <DialogueBox character={CHARACTERS.carmen} line={dialogue} />
           <div style={{ flex:1, padding:'8px 10px', overflow:'auto' }}>
             <div style={{ fontFamily:MONO, fontSize:7, color:'rgba(255,255,255,0.2)', letterSpacing:2, marginBottom:6 }}>SELECT GENRE</div>
             <div style={{ display:'flex', flexDirection:'column', gap:4 }}>
@@ -758,7 +887,7 @@ export default function PreProduction() {
 
         {/* ═══ BEAT 1: CONCEPT ═══ */}
         {beat === 1 && <>
-          <DialogueBox character={selectedPitch ? TEAM.writer : TEAM.writer} line={selectedPitch ? dialogue : pick(TEAM.writer.lines.greeting)} />
+          <DialogueBox character={CHARACTERS.ricky} line={selectedPitch ? dialogue : getDialogue('ricky', 'greeting', dialogueCtx)} />
           <div style={{ flex:1, padding:'8px 10px', overflow:'auto' }}>
             {!selectedPitch ? <>
               <div style={{ fontFamily:MONO, fontSize:7, color:'rgba(255,255,255,0.2)', letterSpacing:2, marginBottom:6 }}>CHOOSE YOUR PITCH</div>
@@ -792,56 +921,193 @@ export default function PreProduction() {
           </div>
         </>}
 
-        {/* ═══ BEAT 2: MONEY ═══ */}
+        {/* ═══ BEAT 2: MONEY (Two-Wallet Funding) ═══ */}
         {beat === 2 && <>
-          <DialogueBox character={TEAM.finance} line={dialogue} />
+          <DialogueBox character={CHARACTERS.arthur} line={dialogue} />
           <div style={{ flex:1, padding:'8px 10px', overflow:'auto' }}>
-            {!budgetTier ? <>
-              <div style={{ fontFamily:MONO, fontSize:7, color:'rgba(255,255,255,0.2)', letterSpacing:2, marginBottom:6 }}>SELECT BUDGET</div>
-              {[
-                { tier:'indie', label:'INDIE', amount:'$15M', desc:'Lean and scrappy.', note:'Auto-approved', icon:'🎥' },
-                { tier:'studio', label:'STUDIO', amount:'$60M', desc:'Proper production value.', note:'1 question', icon:'🎬' },
-                { tier:'blockbuster', label:'BLOCKBUSTER', amount:'$120M', desc:'Tentpole territory.', note:'2 questions — can be denied', icon:'💰' },
-              ].map(b => {
-                const locked = isBudgetLocked(b.tier);
-                return <div key={b.tier} onClick={() => !locked && selectBudget(b.tier)} style={{
-                  display:'flex', alignItems:'center', gap:10, padding:'12px 14px', borderRadius:8, cursor:locked ? 'not-allowed' : 'pointer',
-                  background:'rgba(255,255,255,0.03)', border:'1px solid rgba(255,255,255,0.06)', marginBottom:5, transition:'all 0.15s',
-                  opacity:locked ? 0.35 : 1,
-                }}>
-                  <div style={{ fontSize:20 }}>{b.icon}</div>
-                  <div style={{ flex:1 }}>
-                    <div style={{ fontFamily:MONO, fontSize:11, color:'#fff', letterSpacing:0.5 }}>{b.label} — {b.amount}</div>
-                    <div style={{ fontFamily:MONO, fontSize:8, color:'rgba(255,255,255,0.3)', marginTop:2 }}>{b.desc}</div>
+
+            {/* ── FILM 1: Always self-funded, Carmen handles it ── */}
+            {fundingSubPhase === 'film1' && !fundingConfirmed && (() => {
+              const allocations = getFilm1Allocations(funds);
+              return <>
+                <div style={{ fontFamily:MONO, fontSize:7, color:'rgba(255,255,255,0.2)', letterSpacing:2, marginBottom:6 }}>ALLOCATE PRODUCTION BUDGET</div>
+                <div style={{ padding:'8px 12px', background:'rgba(255,255,255,0.03)', border:'1px solid rgba(255,255,255,0.06)', borderRadius:8, marginBottom:10 }}>
+                  <div style={{ fontFamily:MONO, fontSize:8, color:'rgba(255,255,255,0.3)', letterSpacing:1 }}>PACIFIC DREAMS TREASURY</div>
+                  <div style={{ fontFamily:MONO, fontSize:16, fontWeight:700, color:COLORS.green, marginTop:2 }}>{fmt(funds)}</div>
+                </div>
+                {allocations.map((a, i) => (
+                  <div key={i} onClick={() => confirmFilm1Allocation(a)} style={{
+                    display:'flex', alignItems:'center', gap:10, padding:'12px 14px', borderRadius:8, cursor:'pointer',
+                    background:'rgba(255,255,255,0.03)', border:'1px solid rgba(255,255,255,0.06)', marginBottom:5, transition:'all 0.15s',
+                  }}>
+                    <div style={{ flex:1 }}>
+                      <div style={{ fontFamily:MONO, fontSize:11, color:'#fff', letterSpacing:0.5 }}>{a.label} — {fmt(a.amount)}</div>
+                      <div style={{ fontFamily:MONO, fontSize:8, color:'rgba(255,255,255,0.3)', marginTop:2 }}>{a.desc}</div>
+                    </div>
+                    <div style={{ fontFamily:MONO, fontSize:8, color:'rgba(255,255,255,0.2)' }}>leave {fmt(funds - a.amount)}</div>
                   </div>
-                  <div style={{ fontFamily:MONO, fontSize:7, color:'rgba(255,255,255,0.25)' }}>{locked ? '🔒' : b.note}</div>
-                </div>;
-              })}
-            </> : negotiating ? <>
-              <div style={{ fontFamily:MONO, fontSize:7, color:'rgba(255,255,255,0.2)', letterSpacing:2, marginBottom:6 }}>MAKE YOUR CASE</div>
-              <div style={{ display:'flex', flexDirection:'column', gap:5 }}>
-                {negotiating.options.map((opt, i) => <div key={i} onClick={() => answerNegotiation(opt)} style={{
-                  padding:'10px 12px', borderRadius:8, cursor:'pointer', background:'rgba(255,255,255,0.03)',
-                  border:'1px solid rgba(255,255,255,0.06)', transition:'all 0.15s',
-                }}>
-                  <div style={{ fontFamily:MONO, fontSize:10, color:'rgba(255,255,255,0.6)', lineHeight:1.5 }}>{opt.text}</div>
-                </div>)}
+                ))}
+                <div style={{ fontFamily:MONO, fontSize:7, color:'rgba(255,255,255,0.15)', marginTop:8, fontStyle:'italic', lineHeight:1.6 }}>
+                  ⚠️ This comes from your company's funds. Whatever you don't spend comes back. Whatever the film earns, you keep 100%.
+                </div>
+              </>;
+            })()}
+
+            {/* ── FILM 2+: The Fork ── */}
+            {fundingSubPhase === 'fork' && !fundingConfirmed && <>
+              <div style={{ fontFamily:MONO, fontSize:7, color:'rgba(255,255,255,0.2)', letterSpacing:2, marginBottom:6 }}>HOW ARE WE FUNDING THIS?</div>
+
+              {/* Find a Distributor */}
+              <div onClick={chooseFindDistributor} style={{
+                padding:'14px 16px', borderRadius:8, cursor:'pointer',
+                background:'rgba(255,255,255,0.03)', border:'1px solid rgba(255,255,255,0.06)', marginBottom:6, transition:'all 0.15s',
+              }}>
+                <div style={{ display:'flex', alignItems:'center', gap:8 }}>
+                  <div style={{ fontSize:18 }}>🤝</div>
+                  <div style={{ flex:1 }}>
+                    <div style={{ fontFamily:MONO, fontSize:11, color:'#fff', letterSpacing:0.5 }}>FIND A DISTRIBUTOR</div>
+                    <div style={{ fontFamily:MONO, fontSize:8, color:'rgba(255,255,255,0.35)', marginTop:3, lineHeight:1.5 }}>
+                      Arthur negotiates a deal. They fund the film.<br />
+                      You give up revenue share but risk nothing.
+                    </div>
+                  </div>
+                </div>
               </div>
-            </> : <>
-              <div style={{ padding:'16px', textAlign:'center' }}>
-                <div style={{ fontFamily:MONO, fontSize:10, color:negoResult === 'approved' ? COLORS.green : COLORS.amber, letterSpacing:1 }}>
-                  {budgetTier.toUpperCase()} BUDGET {negoResult === 'denied' ? '(DOWNGRADED)' : 'APPROVED'}
+
+              {/* Self-Fund */}
+              <div onClick={chooseSelfFund} style={{
+                padding:'14px 16px', borderRadius:8, cursor:'pointer',
+                background:'rgba(255,255,255,0.03)', border:'1px solid rgba(255,255,255,0.06)', marginBottom:6, transition:'all 0.15s',
+              }}>
+                <div style={{ display:'flex', alignItems:'center', gap:8 }}>
+                  <div style={{ fontSize:18 }}>💰</div>
+                  <div style={{ flex:1 }}>
+                    <div style={{ fontFamily:MONO, fontSize:11, color:'#fff', letterSpacing:0.5 }}>SELF-FUND</div>
+                    <div style={{ fontFamily:MONO, fontSize:8, color:'rgba(255,255,255,0.35)', marginTop:3, lineHeight:1.5 }}>
+                      Use Pacific Dreams' own money.<br />
+                      Keep 100% of revenue. Risk everything.
+                    </div>
+                    <div style={{ fontFamily:MONO, fontSize:9, color:COLORS.green, marginTop:4 }}>Treasury: {fmt(funds)}</div>
+                  </div>
                 </div>
               </div>
             </>}
+
+            {/* ── Distributor Offers ── */}
+            {fundingSubPhase === 'distributor' && !fundingConfirmed && <>
+              <div style={{ fontFamily:MONO, fontSize:7, color:'rgba(255,255,255,0.2)', letterSpacing:2, marginBottom:6 }}>DISTRIBUTOR OFFERS</div>
+
+              {distributorOffers.length > 0 ? <>
+                {distributorOffers.map((offer, i) => (
+                  <div key={i} onClick={() => acceptDistributor(offer)} style={{
+                    padding:'14px 16px', borderRadius:8, cursor:'pointer',
+                    background:'rgba(255,255,255,0.03)', border:'1px solid rgba(255,255,255,0.06)', marginBottom:6, transition:'all 0.15s',
+                  }}>
+                    <div style={{ display:'flex', alignItems:'center', gap:8, marginBottom:6 }}>
+                      <div style={{ fontFamily:MONO, fontSize:11, color:COLORS.orange, letterSpacing:0.5 }}>{offer.distributorName}</div>
+                      <div style={{ fontFamily:MONO, fontSize:8, color:'rgba(255,255,255,0.2)', marginLeft:'auto' }}>{offer.personality}</div>
+                    </div>
+                    <div style={{ display:'flex', gap:12, marginBottom:4 }}>
+                      <div>
+                        <div style={{ fontFamily:MONO, fontSize:7, color:'rgba(255,255,255,0.25)', letterSpacing:1 }}>BUDGET</div>
+                        <div style={{ fontFamily:MONO, fontSize:14, fontWeight:700, color:COLORS.green }}>{fmt(offer.budget)}</div>
+                      </div>
+                      <div>
+                        <div style={{ fontFamily:MONO, fontSize:7, color:'rgba(255,255,255,0.25)', letterSpacing:1 }}>YOUR SHARE</div>
+                        <div style={{ fontFamily:MONO, fontSize:14, fontWeight:700, color:COLORS.amber }}>{Math.round(offer.revenueShare * 100)}%</div>
+                      </div>
+                    </div>
+                    {offer.condition && (
+                      <div style={{ fontFamily:MONO, fontSize:8, color:COLORS.red, marginTop:2 }}>⚠️ Condition: {offer.condition}</div>
+                    )}
+                  </div>
+                ))}
+
+                {/* Reject all */}
+                <div onClick={rejectDistributors} style={{
+                  padding:'10px 14px', borderRadius:8, cursor:'pointer', textAlign:'center',
+                  background:'rgba(255,255,255,0.02)', border:'1px solid rgba(255,255,255,0.04)', marginTop:4, transition:'all 0.15s',
+                }}>
+                  <div style={{ fontFamily:MONO, fontSize:9, color:'rgba(255,255,255,0.3)', letterSpacing:1 }}>PASS — SELF FUND INSTEAD</div>
+                </div>
+              </> : (
+                <div style={{ padding:'16px', textAlign:'center' }}>
+                  <div style={{ fontFamily:MONO, fontSize:10, color:COLORS.amber, letterSpacing:1 }}>NO OFFERS AVAILABLE</div>
+                  <div style={{ fontFamily:MONO, fontSize:8, color:'rgba(255,255,255,0.3)', marginTop:6 }}>Redirecting to self-fund...</div>
+                </div>
+              )}
+            </>}
+
+            {/* ── Self-Fund Allocation (Film 2+) ── */}
+            {fundingSubPhase === 'selffund' && !fundingConfirmed && (() => {
+              const tiers = getSelfFundTiers(funds, builtBuildings);
+              return <>
+                <div style={{ fontFamily:MONO, fontSize:7, color:'rgba(255,255,255,0.2)', letterSpacing:2, marginBottom:6 }}>ALLOCATE PRODUCTION BUDGET</div>
+                <div style={{ padding:'8px 12px', background:'rgba(255,255,255,0.03)', border:'1px solid rgba(255,255,255,0.06)', borderRadius:8, marginBottom:10 }}>
+                  <div style={{ fontFamily:MONO, fontSize:8, color:'rgba(255,255,255,0.3)', letterSpacing:1 }}>PACIFIC DREAMS TREASURY</div>
+                  <div style={{ fontFamily:MONO, fontSize:16, fontWeight:700, color:COLORS.green, marginTop:2 }}>{fmt(funds)}</div>
+                </div>
+                {tiers.map((t, i) => {
+                  const locked = isBudgetLocked(t.tier);
+                  return <div key={i} onClick={() => !locked && confirmSelfFund(t.amount)} style={{
+                    display:'flex', alignItems:'center', gap:10, padding:'12px 14px', borderRadius:8,
+                    cursor:locked ? 'not-allowed' : 'pointer',
+                    background:'rgba(255,255,255,0.03)', border:'1px solid rgba(255,255,255,0.06)', marginBottom:5, transition:'all 0.15s',
+                    opacity:locked ? 0.35 : 1,
+                  }}>
+                    <div style={{ fontSize:20 }}>{t.icon}</div>
+                    <div style={{ flex:1 }}>
+                      <div style={{ fontFamily:MONO, fontSize:11, color:'#fff', letterSpacing:0.5 }}>{t.label} — {fmt(t.amount)}</div>
+                      <div style={{ fontFamily:MONO, fontSize:8, color:'rgba(255,255,255,0.3)', marginTop:2 }}>{t.desc}</div>
+                    </div>
+                    <div style={{ fontFamily:MONO, fontSize:8, color:'rgba(255,255,255,0.2)' }}>
+                      {locked ? '🔒' : `leave ${fmt(funds - t.amount)}`}
+                    </div>
+                  </div>;
+                })}
+                <div style={{ fontFamily:MONO, fontSize:7, color:'rgba(255,255,255,0.15)', marginTop:8, fontStyle:'italic', lineHeight:1.6 }}>
+                  ⚠️ This comes from your company's funds. Whatever you don't spend comes back. Whatever the film earns, you keep 100%.
+                </div>
+              </>;
+            })()}
+
+            {/* ── Funding Confirmed ── */}
+            {fundingConfirmed && (
+              <div style={{ padding:'16px', textAlign:'center' }}>
+                <div style={{ fontFamily:MONO, fontSize:10, color:COLORS.green, letterSpacing:1 }}>
+                  BUDGET {selectedOffer ? `FROM ${selectedOffer.distributorName.toUpperCase()}` : 'SELF-FUNDED'} — APPROVED
+                </div>
+                {selectedOffer && (
+                  <div style={{ fontFamily:MONO, fontSize:8, color:'rgba(255,255,255,0.3)', marginTop:4 }}>
+                    Revenue share: {Math.round(selectedOffer.revenueShare * 100)}% yours / {Math.round((1 - selectedOffer.revenueShare) * 100)}% distributor
+                  </div>
+                )}
+              </div>
+            )}
           </div>
         </>}
 
         {/* ═══ BEAT 3: TALENT ═══ */}
         {beat === 3 && <>
-          <DialogueBox character={TEAM.agent} line={dialogue} />
+          <DialogueBox character={CHARACTERS.max} line={dialogue} />
           <div style={{ flex:1, padding:'8px 10px', overflow:'auto' }}>
-            {demandPopup ? <>
+            {treasuryDipPopup ? <>
+              <div style={{ fontFamily:MONO, fontSize:7, color:COLORS.amber, letterSpacing:2, marginBottom:6 }}>⚠️ BUDGET SHORTFALL</div>
+              <div style={{ padding:'12px 14px', background:`${COLORS.amber}0f`, border:`1px solid ${COLORS.amber}26`, borderRadius:8, marginBottom:8 }}>
+                <div style={{ display:'flex', alignItems:'center', gap:8, marginBottom:6 }}>
+                  <div style={{ fontSize:22 }}>{treasuryDipPopup.talent.icon}</div>
+                  <div style={{ fontFamily:MONO, fontSize:11, color:'#fff' }}>{treasuryDipPopup.talent.archetype} — {fmt(treasuryDipPopup.cost)}</div>
+                </div>
+                <div style={{ fontFamily:MONO, fontSize:9, color:'rgba(255,255,255,0.4)', lineHeight:1.5 }}>
+                  Film budget remaining: {fmt(treasuryDipPopup.remaining)}<br />
+                  Shortfall: <span style={{ color:COLORS.red }}>{fmt(treasuryDipPopup.shortfall)}</span> from treasury
+                </div>
+              </div>
+              <div style={{ display:'flex', gap:6 }}>
+                <div onClick={acceptTreasuryDip} style={{ flex:1, padding:'10px', borderRadius:6, cursor:'pointer', textAlign:'center', fontFamily:MONO, fontSize:10, background:`${COLORS.amber}14`, border:`1px solid ${COLORS.amber}33`, color:COLORS.amber }}>DIP INTO TREASURY</div>
+                <div onClick={declineTreasuryDip} style={{ flex:1, padding:'10px', borderRadius:6, cursor:'pointer', textAlign:'center', fontFamily:MONO, fontSize:10, background:`${COLORS.red}14`, border:`1px solid ${COLORS.red}33`, color:COLORS.red }}>PICK SOMEONE ELSE</div>
+              </div>
+            </> : demandPopup ? <>
               <div style={{ fontFamily:MONO, fontSize:7, color:COLORS.red, letterSpacing:2, marginBottom:6 }}>⚠️ DEMAND</div>
               <div style={{ padding:'12px 14px', background:`${COLORS.red}0f`, border:`1px solid ${COLORS.red}26`, borderRadius:8, marginBottom:8 }}>
                 <div style={{ display:'flex', alignItems:'center', gap:8, marginBottom:6 }}>
@@ -852,10 +1118,10 @@ export default function PreProduction() {
                 <div style={{ fontFamily:MONO, fontSize:9, color:'rgba(255,255,255,0.4)', lineHeight:1.5 }}>{demandPopup.demand.desc}</div>
               </div>
               <div style={{ display:'flex', gap:6 }}>
-                <div onClick={() => confirmTalent(demandPopup, true)} style={{ flex:1, padding:'10px', borderRadius:6, cursor:'pointer', textAlign:'center', fontFamily:MONO, fontSize:10, background:`${COLORS.green}14`, border:`1px solid ${COLORS.green}33`, color:COLORS.green }}>ACCEPT</div>
+                <div onClick={() => { setDemandPopup(null); checkAffordabilityAndConfirm(demandPopup, true); }} style={{ flex:1, padding:'10px', borderRadius:6, cursor:'pointer', textAlign:'center', fontFamily:MONO, fontSize:10, background:`${COLORS.green}14`, border:`1px solid ${COLORS.green}33`, color:COLORS.green }}>ACCEPT</div>
                 <div onClick={() => {
                   setDemandPopup(null);
-                  setDialogue(pick(TEAM.agent.lines.present));
+                  setDialogue(getDialogue('max', 'talent_present', dialogueCtx));
                   logMemory(filmNumber, 'talent', TAGS.DEMAND_DENIED, { actor: demandPopup.archetype, detail: demandPopup.demand.label });
                   denyDemand(demandPopup.archetype, filmNumber);
                 }} style={{ flex:1, padding:'10px', borderRadius:6, cursor:'pointer', textAlign:'center', fontFamily:MONO, fontSize:10, background:`${COLORS.red}14`, border:`1px solid ${COLORS.red}33`, color:COLORS.red }}>PASS</div>
@@ -902,7 +1168,7 @@ export default function PreProduction() {
 
         {/* ═══ BEAT 4: GREENLIGHT ═══ */}
         {beat === 4 && <>
-          <DialogueBox character={TEAM.development} line={dialogue} />
+          <DialogueBox character={CHARACTERS.carmen} line={dialogue} />
           <div style={{ flex:1, padding:'8px 10px', overflow:'auto' }}>
             {/* Summary */}
             <div style={{ padding:'10px 12px', background:'rgba(255,255,255,0.03)', border:'1px solid rgba(255,255,255,0.06)', borderRadius:8, marginBottom:8 }}>
@@ -910,7 +1176,10 @@ export default function PreProduction() {
               <div style={{ display:'flex', gap:8, flexWrap:'wrap', marginBottom:8 }}>
                 <div style={{ fontFamily:MONO, fontSize:8, color:trendColor(trends[genre?.id] || 'warm'), padding:'2px 6px', background:'rgba(255,255,255,0.04)', borderRadius:3 }}>{genre?.icon} {genre?.label} ({trendIcon(trends[genre?.id] || 'warm')})</div>
                 <div style={{ fontFamily:MONO, fontSize:8, color:'rgba(255,255,255,0.4)', padding:'2px 6px', background:'rgba(255,255,255,0.04)', borderRadius:3 }}>{rating}</div>
-                <div style={{ fontFamily:MONO, fontSize:8, color:COLORS.green, padding:'2px 6px', background:'rgba(255,255,255,0.04)', borderRadius:3 }}>{budgetTier?.toUpperCase()}</div>
+                <div style={{ fontFamily:MONO, fontSize:8, color:COLORS.green, padding:'2px 6px', background:'rgba(255,255,255,0.04)', borderRadius:3 }}>
+                  {budgetTier?.toUpperCase()}
+                  {selectedOffer ? ` (${selectedOffer.distributorName})` : ' (Self-Funded)'}
+                </div>
               </div>
               {/* Cast list */}
               {['director','lead','support'].map(r => cast[r] && <div key={r} style={{ display:'flex', alignItems:'center', gap:6, marginBottom:3 }}>
