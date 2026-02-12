@@ -4360,6 +4360,20 @@ export default function Terminal({ stocks = [], today, onRefresh, loading, limit
           0% { clip-path: inset(0 0 100% 0); opacity: 0; }
           100% { clip-path: inset(0 0 0 0); opacity: 1; }
         }
+        @keyframes sp1000laserWrite {
+          0% { clip-path: inset(0 100% 0 0); opacity: 0; }
+          15% { opacity: 1; }
+          100% { clip-path: inset(0 0 0 0); opacity: 1; }
+        }
+        @keyframes sp1000laserGlow {
+          0% { text-shadow: 0 0 0px rgba(51,255,102,0); }
+          50% { text-shadow: 0 0 30px rgba(51,255,102,0.8), 0 0 60px rgba(51,255,102,0.4), 0 0 90px rgba(51,255,102,0.2); }
+          100% { text-shadow: 0 0 12px rgba(51,255,102,0.6), 0 0 30px rgba(51,255,102,0.2); }
+        }
+        @keyframes sp1000subtitleFade {
+          0% { opacity: 0; transform: translateY(4px); }
+          100% { opacity: 1; transform: translateY(0); }
+        }
         @keyframes sp1000contentFadeOut {
           0% { opacity: 1; }
           100% { opacity: 0; }

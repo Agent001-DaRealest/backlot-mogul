@@ -7,56 +7,82 @@ import PacificDreamsContent from './PacificDreamsContent';
 import useStore from '../../lib/pacific-dreams/store';
 
 // ═══════════════════════════════════════════
-// DOS-style ASCII title card for CRT warm-up phase
-// Replaces the default green-block stock terminal animation
+// 1980s Laser-Write Title Card for CRT warm-up phase
+// Letters reveal left-to-right with staggered delays,
+// heavy phosphor glow, and a subtitle fade-in.
 // ═══════════════════════════════════════════
 
 const MONO = "'Share Tech Mono', 'SF Mono', 'JetBrains Mono', 'Fira Code', 'Consolas', 'Monaco', monospace";
 
-const DOS_TITLE = `╔══════════════════════════════════════╗
-║                                      ║
-║   ██████╗  █████╗  ██████╗██╗███████╗║
-║   ██╔══██╗██╔══██╗██╔════╝██║██╔════╝║
-║   ██████╔╝███████║██║     ██║█████╗  ║
-║   ██╔═══╝ ██╔══██║██║     ██║██╔══╝  ║
-║   ██║     ██║  ██║╚██████╗██║██║     ║
-║   ╚═╝     ╚═╝  ╚═╝ ╚═════╝╚═╝╚═╝     ║
-║                                      ║
-║   ██████╗ ██████╗ ███████╗ █████╗    ║
-║   ██╔══██╗██╔══██╗██╔════╝██╔══██╗   ║
-║   ██║  ██║██████╔╝█████╗  ███████║   ║
-║   ██║  ██║██╔══██╗██╔══╝  ██╔══██║   ║
-║   ██████╔╝██║  ██║███████╗██║  ██║   ║
-║   ╚═════╝ ╚═╝  ╚═╝╚══════╝╚═╝ ╚═╝    ║
-║                                      ║
-║             ███╗   ███╗███████╗      ║
-║             ████╗ ████║██╔════╝      ║
-║             ██╔████╔██║███████╗      ║
-║             ██║╚██╔╝██║╚════██║      ║
-║             ██║ ╚═╝ ██║███████║      ║
-║             ╚═╝     ╚═╝╚══════╝      ║
-║                                      ║
-║      SOUTH END GAMES · BOSTON        ║
-║        — GOES HOLLYWOOD —            ║
-║                                      ║
-╚══════════════════════════════════════╝`;
+function LaserTitle() {
+  const title = 'BACKLOT';
+  const subtitle = 'MOGUL';
+  const perLetter = 0.055;   // seconds between each letter start
+  const writeDur = 0.18;     // how long each letter takes to reveal
+  const row2Offset = title.length * perLetter + 0.12; // gap before second word
+  const subtitleDelay = row2Offset + subtitle.length * perLetter + 0.25;
 
-function DosTitleCard() {
+  const letterStyle = (i, offset = 0) => ({
+    display: 'inline-block',
+    animation: `sp1000laserWrite ${writeDur}s ease-out ${offset + i * perLetter}s both`,
+    color: '#33ff66',
+    textShadow: '0 0 12px rgba(51,255,102,0.6), 0 0 30px rgba(51,255,102,0.2)',
+  });
+
   return (
-    <pre style={{
-      fontFamily: MONO,
-      fontSize: 8.5,
-      lineHeight: 1.15,
-      color: '#33ff66',
-      textShadow: '0 0 8px rgba(51,255,102,0.5), 0 0 20px rgba(51,255,102,0.15)',
-      margin: 0,
-      padding: 0,
-      whiteSpace: 'pre',
-      textAlign: 'center',
-      letterSpacing: 0,
+    <div style={{
+      display: 'flex',
+      flexDirection: 'column',
+      alignItems: 'center',
+      justifyContent: 'center',
+      width: '100%',
+      height: '100%',
+      gap: 6,
     }}>
-      {DOS_TITLE}
-    </pre>
+      {/* BACKLOT — large, laser-written */}
+      <div style={{
+        fontFamily: MONO,
+        fontSize: 52,
+        fontWeight: 700,
+        letterSpacing: 8,
+        lineHeight: 1,
+        whiteSpace: 'nowrap',
+        animation: `sp1000laserGlow 1.2s ease-out ${title.length * perLetter + 0.1}s both`,
+      }}>
+        {title.split('').map((ch, i) => (
+          <span key={i} style={letterStyle(i)}>{ch}</span>
+        ))}
+      </div>
+
+      {/* MOGUL — same size, second row */}
+      <div style={{
+        fontFamily: MONO,
+        fontSize: 52,
+        fontWeight: 700,
+        letterSpacing: 8,
+        lineHeight: 1,
+        whiteSpace: 'nowrap',
+        animation: `sp1000laserGlow 1.2s ease-out ${row2Offset + subtitle.length * perLetter + 0.1}s both`,
+      }}>
+        {subtitle.split('').map((ch, i) => (
+          <span key={i} style={letterStyle(i, row2Offset)}>{ch}</span>
+        ))}
+      </div>
+
+      {/* by SOUTH END GAMES — smaller, fades in after title completes */}
+      <div style={{
+        fontFamily: MONO,
+        fontSize: 11,
+        letterSpacing: 4,
+        color: '#33ff66',
+        opacity: 0,
+        marginTop: 14,
+        textShadow: '0 0 8px rgba(51,255,102,0.4)',
+        animation: `sp1000subtitleFade 0.5s ease-out ${subtitleDelay}s both`,
+      }}>
+        SOUTH END GAMES
+      </div>
+    </div>
   );
 }
 
@@ -81,7 +107,7 @@ const PACIFIC_DREAMS_PROGRAM = {
     { text: '' },
     { text: 'BUILDING YOUR STUDIO EMPIRE . . . READY' },
   ],
-  warmUpContent: <DosTitleCard />,
+  warmUpContent: <LaserTitle />,
   content: (props) => <PacificDreamsContent {...props} />,
   onLogoClick: () => useStore.getState().requestReboot(),
 };
