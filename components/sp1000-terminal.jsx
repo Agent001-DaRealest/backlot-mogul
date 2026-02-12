@@ -2299,7 +2299,7 @@ function FrontFace({ stocks, today, loading, limitReached, lastSynced, showSyncT
 }
 
 // Startup overlay — logo splash + DOS boot sequence + CRT warm-up
-function StartupOverlay({ onComplete, onFadeIn, logo: logoProp, bootLines: bootLinesProp }) {
+function StartupOverlay({ onComplete, onFadeIn, logo: logoProp, bootLines: bootLinesProp, warmUpContent }) {
   // -1=unit off (black, instant), 0=white logo (backlight fading in), 2=boot text, 2.5=boot text final frame, 3=warm-up, 4=dismissing
   const [phase, setPhase] = useState(-1);
   const logo = logoProp || '/south-end-ai-logo.png';
@@ -2545,43 +2545,54 @@ function StartupOverlay({ onComplete, onFadeIn, logo: logoProp, bootLines: bootL
               background: 'repeating-linear-gradient(0deg, transparent 0px, transparent 2px, rgba(0,0,0,0.08) 2px, rgba(0,0,0,0.08) 4px)',
               opacity: 0.5,
             }} />
-            {/* Terminal placeholder rows */}
-            <div style={{
-              position: 'absolute', top: 0, left: 0, right: 0, bottom: 0,
-              display: 'flex', flexDirection: 'column', padding: '18px 24px', boxSizing: 'border-box',
-            }}>
-              {/* Header row */}
+            {/* Terminal placeholder rows (or custom warm-up content) */}
+            {warmUpContent ? (
               <div style={{
-                fontFamily: MONO, fontSize: 14, color: COLORS.green, letterSpacing: 5,
-                marginBottom: 16, paddingBottom: 8, borderBottom: '1px solid #222',
-                overflow: 'hidden', whiteSpace: 'nowrap',
-                animation: 'sp1000topDownReveal 0.6s ease-out 0.1s both',
-                textShadow: '0 0 8px rgba(51,255,102,0.4)',
+                position: 'absolute', top: 0, left: 0, right: 0, bottom: 0,
+                display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+                padding: '18px 24px', boxSizing: 'border-box',
+                animation: 'sp1000topDownReveal 0.8s ease-out 0.1s both',
               }}>
-                LEAPS TERMINAL
+                {warmUpContent}
               </div>
-              {/* Data rows — green blocks only, 4 chars per column */}
-              {[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((i) => (
-                <div key={i} style={{
-                  height: 48, borderBottom: i < 10 ? `1px solid ${COLORS.dimmer}` : 'none',
-                  display: 'flex', alignItems: 'center', overflow: 'hidden',
+            ) : (
+              <div style={{
+                position: 'absolute', top: 0, left: 0, right: 0, bottom: 0,
+                display: 'flex', flexDirection: 'column', padding: '18px 24px', boxSizing: 'border-box',
+              }}>
+                {/* Header row */}
+                <div style={{
+                  fontFamily: MONO, fontSize: 14, color: COLORS.green, letterSpacing: 5,
+                  marginBottom: 16, paddingBottom: 8, borderBottom: '1px solid #222',
+                  overflow: 'hidden', whiteSpace: 'nowrap',
+                  animation: 'sp1000topDownReveal 0.6s ease-out 0.1s both',
+                  textShadow: '0 0 8px rgba(51,255,102,0.4)',
                 }}>
-                  <div style={{
-                    fontFamily: MONO, fontSize: 16, color: COLORS.green, letterSpacing: 1,
-                    animation: `sp1000topDownReveal 0.4s ease-out ${0.3 + i * 0.08}s both`,
-                    textShadow: '0 0 6px rgba(51,255,102,0.3)',
-                    display: 'flex', alignItems: 'center', width: '100%',
-                  }}>
-                    <span style={{ width: 32, flexShrink: 0 }} />
-                    <span style={{ width: 58, flexShrink: 0 }}>{'████'}</span>
-                    <span style={{ flex: 1.2, textAlign: 'center' }}>{'████'}</span>
-                    <span style={{ flex: 1, textAlign: 'center' }}>{'████'}</span>
-                    <span style={{ flex: 0.6, textAlign: 'center' }}>{'████'}</span>
-                    <span style={{ flex: 1, textAlign: 'center' }}>{'████'}</span>
-                  </div>
+                  LEAPS TERMINAL
                 </div>
-              ))}
-            </div>
+                {/* Data rows — green blocks only, 4 chars per column */}
+                {[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((i) => (
+                  <div key={i} style={{
+                    height: 48, borderBottom: i < 10 ? `1px solid ${COLORS.dimmer}` : 'none',
+                    display: 'flex', alignItems: 'center', overflow: 'hidden',
+                  }}>
+                    <div style={{
+                      fontFamily: MONO, fontSize: 16, color: COLORS.green, letterSpacing: 1,
+                      animation: `sp1000topDownReveal 0.4s ease-out ${0.3 + i * 0.08}s both`,
+                      textShadow: '0 0 6px rgba(51,255,102,0.3)',
+                      display: 'flex', alignItems: 'center', width: '100%',
+                    }}>
+                      <span style={{ width: 32, flexShrink: 0 }} />
+                      <span style={{ width: 58, flexShrink: 0 }}>{'████'}</span>
+                      <span style={{ flex: 1.2, textAlign: 'center' }}>{'████'}</span>
+                      <span style={{ flex: 1, textAlign: 'center' }}>{'████'}</span>
+                      <span style={{ flex: 0.6, textAlign: 'center' }}>{'████'}</span>
+                      <span style={{ flex: 1, textAlign: 'center' }}>{'████'}</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
           {/* Horizontal laser sweep */}
           <div style={{
@@ -4517,7 +4528,7 @@ export default function Terminal({ stocks = [], today, onRefresh, loading, limit
                   }}
                 />
               )}
-              {bootChecked && !booted && <StartupOverlay onComplete={handleBootComplete} onFadeIn={handleBootFadeIn} logo={prog.logo} bootLines={prog.bootLines} />}
+              {bootChecked && !booted && <StartupOverlay onComplete={handleBootComplete} onFadeIn={handleBootFadeIn} logo={prog.logo} bootLines={prog.bootLines} warmUpContent={prog.warmUpContent} />}
               {isSP1000 && <>
               <PixelGlitchOverlay active={glitching} startAtGag={contactGag} stocks={stocks} today={today} onDismiss={() => { setGlitching(false); setGuideBlurred(false); setContactGag(false); setRestartVisible(false); }} onBlurStart={() => setGuideBlurred(true)} onReboot={() => setBooted(false)} />
               {timeMachineInput && (

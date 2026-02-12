@@ -6,6 +6,60 @@ import React from 'react';
 import PacificDreamsContent from './PacificDreamsContent';
 import useStore from '../../lib/pacific-dreams/store';
 
+// ═══════════════════════════════════════════
+// DOS-style ASCII title card for CRT warm-up phase
+// Replaces the default green-block stock terminal animation
+// ═══════════════════════════════════════════
+
+const MONO = "'Share Tech Mono', 'SF Mono', 'JetBrains Mono', 'Fira Code', 'Consolas', 'Monaco', monospace";
+
+const DOS_TITLE = `╔══════════════════════════════════════╗
+║                                      ║
+║   ██████╗  █████╗  ██████╗██╗███████╗║
+║   ██╔══██╗██╔══██╗██╔════╝██║██╔════╝║
+║   ██████╔╝███████║██║     ██║█████╗  ║
+║   ██╔═══╝ ██╔══██║██║     ██║██╔══╝  ║
+║   ██║     ██║  ██║╚██████╗██║██║     ║
+║   ╚═╝     ╚═╝  ╚═╝ ╚═════╝╚═╝╚═╝     ║
+║                                      ║
+║   ██████╗ ██████╗ ███████╗ █████╗    ║
+║   ██╔══██╗██╔══██╗██╔════╝██╔══██╗   ║
+║   ██║  ██║██████╔╝█████╗  ███████║   ║
+║   ██║  ██║██╔══██╗██╔══╝  ██╔══██║   ║
+║   ██████╔╝██║  ██║███████╗██║  ██║   ║
+║   ╚═════╝ ╚═╝  ╚═╝╚══════╝╚═╝ ╚═╝    ║
+║                                      ║
+║             ███╗   ███╗███████╗      ║
+║             ████╗ ████║██╔════╝      ║
+║             ██╔████╔██║███████╗      ║
+║             ██║╚██╔╝██║╚════██║      ║
+║             ██║ ╚═╝ ██║███████║      ║
+║             ╚═╝     ╚═╝╚══════╝      ║
+║                                      ║
+║      SOUTH END GAMES · BOSTON        ║
+║        — GOES HOLLYWOOD —            ║
+║                                      ║
+╚══════════════════════════════════════╝`;
+
+function DosTitleCard() {
+  return (
+    <pre style={{
+      fontFamily: MONO,
+      fontSize: 8.5,
+      lineHeight: 1.15,
+      color: '#33ff66',
+      textShadow: '0 0 8px rgba(51,255,102,0.5), 0 0 20px rgba(51,255,102,0.15)',
+      margin: 0,
+      padding: 0,
+      whiteSpace: 'pre',
+      textAlign: 'center',
+      letterSpacing: 0,
+    }}>
+      {DOS_TITLE}
+    </pre>
+  );
+}
+
 const PACIFIC_DREAMS_PROGRAM = {
   id: 'pacific-dreams',
   name: 'PACIFIC DREAMS',
@@ -27,6 +81,7 @@ const PACIFIC_DREAMS_PROGRAM = {
     { text: '' },
     { text: 'BUILDING YOUR STUDIO EMPIRE . . . READY' },
   ],
+  warmUpContent: <DosTitleCard />,
   content: (props) => <PacificDreamsContent {...props} />,
   onLogoClick: () => useStore.getState().requestReboot(),
 };
