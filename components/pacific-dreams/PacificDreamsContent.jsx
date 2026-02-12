@@ -13,10 +13,16 @@ import Premiere from './Premiere';
 import CombinedLot from './CombinedLot';
 import Endgame from './Endgame';
 
-// Screen height — 30% taller than SP-1000's FrontFace to give the game
-// more breathing room for phase UIs (PreProd casting, Lot grid, Endgame scroll).
-const SCREEN_HEIGHT_DESKTOP = 871;   // 670 × 1.3
-const SCREEN_HEIGHT_MOBILE = 702;    // 540 × 1.3
+// Screen height — viewport-relative so the game fits in the browser window.
+// Subtracts terminal overhead (shell padding + housing + toolbar + bezel ≈ 124px)
+// and clamps to a reasonable range so it's always taller than SP-1000 but never overflows.
+function getScreenHeight(isMobile) {
+  if (typeof window === 'undefined') return 700; // SSR fallback
+  const available = window.innerHeight - 124;
+  const min = isMobile ? 480 : 580;
+  const max = isMobile ? 620 : 750;
+  return Math.max(min, Math.min(max, available));
+}
 
 function StudioHeader() {
   const { reputation, filmNumber, history, funds, getRepStars } = useStore();
@@ -307,7 +313,13 @@ export default function PacificDreamsContent() {
     }
   }, [phase, setPhase]);
 
-  const screenHeight = isMobile ? SCREEN_HEIGHT_MOBILE : SCREEN_HEIGHT_DESKTOP;
+  const [screenHeight, setScreenHeight] = useState(() => getScreenHeight(isMobile));
+  useEffect(() => {
+    const onResize = () => setScreenHeight(getScreenHeight(isMobile));
+    onResize(); // recalc on isMobile change
+    window.addEventListener('resize', onResize);
+    return () => window.removeEventListener('resize', onResize);
+  }, [isMobile]);
 
   return (
     <div style={{

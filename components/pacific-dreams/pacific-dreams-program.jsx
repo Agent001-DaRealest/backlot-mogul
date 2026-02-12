@@ -110,18 +110,18 @@ function handleLogoClick() {
   }
 }
 
-// Screen heights — 30% taller than SP-1000's default view
-const SCREEN_HEIGHT_DESKTOP = 871;   // 670 × 1.3
-const SCREEN_HEIGHT_MOBILE = 702;    // 540 × 1.3
-
 const PACIFIC_DREAMS_PROGRAM = {
   id: 'pacific-dreams',
   name: 'PACIFIC DREAMS',
   logo: '/south-end-games-logo-social.jpg',
-  // Declared as getter so it reads the correct viewport size at access time (SSR-safe)
+  // Viewport-relative height — fits in browser window without overflow
   get screenHeight() {
-    if (typeof window === 'undefined') return SCREEN_HEIGHT_DESKTOP;
-    return window.innerWidth < 700 ? SCREEN_HEIGHT_MOBILE : SCREEN_HEIGHT_DESKTOP;
+    if (typeof window === 'undefined') return 700;
+    const isMobile = window.innerWidth < 700;
+    const available = window.innerHeight - 124;
+    const min = isMobile ? 480 : 580;
+    const max = isMobile ? 620 : 750;
+    return Math.max(min, Math.min(max, available));
   },
   bootLines: [
     { text: 'SOUTH END GAMES' },
