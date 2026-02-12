@@ -3889,10 +3889,18 @@ export default function Terminal({ stocks = [], today, onRefresh, loading, limit
   // The height grows during the boot sequence (green laser sweep + boot text) so the
   // terminal bezel visually expands while the boot overlay is on-screen.
   const contentRef = React.useRef(null);
+  // Use SSR-safe fallback (700 for Pacific Dreams, null for SP-1000) to avoid hydration mismatch.
+  // The real viewport-relative value is set in useEffect after mount.
+  const initProg = program || SP1000_PROGRAM;
   const [contentHeight, setContentHeight] = useState(
-    (program || SP1000_PROGRAM).screenHeight || null
+    initProg.id === 'sp1000' ? null : 700
   );
   const [heightTransitioning, setHeightTransitioning] = useState(false);
+  useEffect(() => {
+    if (activeProgram.screenHeight) {
+      setContentHeight(activeProgram.screenHeight);
+    }
+  }, []);
 
   const [glitching, setGlitching] = useState(false);
   const [showLogo, setShowLogo] = useState(false);

@@ -313,10 +313,12 @@ export default function PacificDreamsContent() {
     }
   }, [phase, setPhase]);
 
-  const [screenHeight, setScreenHeight] = useState(() => getScreenHeight(isMobile));
+  // Start with SSR-safe fallback (700), then measure on client after mount.
+  // This avoids hydration mismatch from window.innerHeight differing from SSR.
+  const [screenHeight, setScreenHeight] = useState(700);
   useEffect(() => {
     const onResize = () => setScreenHeight(getScreenHeight(isMobile));
-    onResize(); // recalc on isMobile change
+    onResize(); // initial measurement
     window.addEventListener('resize', onResize);
     return () => window.removeEventListener('resize', onResize);
   }, [isMobile]);
