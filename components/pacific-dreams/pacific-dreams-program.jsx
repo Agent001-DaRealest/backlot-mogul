@@ -86,10 +86,43 @@ function LaserTitle() {
   );
 }
 
+// ═══════════════════════════════════════════
+// Double-click logo → skip to endgame (hidden test shortcut)
+// Single click → normal reboot overlay (500ms debounce)
+// ═══════════════════════════════════════════
+
+let _logoClickTimer = null;
+let _logoClickCount = 0;
+
+function handleLogoClick() {
+  _logoClickCount++;
+  if (_logoClickCount === 1) {
+    _logoClickTimer = setTimeout(() => {
+      _logoClickCount = 0;
+      _logoClickTimer = null;
+      useStore.getState().requestReboot();
+    }, 500);
+  } else if (_logoClickCount >= 2) {
+    clearTimeout(_logoClickTimer);
+    _logoClickTimer = null;
+    _logoClickCount = 0;
+    useStore.getState().setEndgameTestState();
+  }
+}
+
+// Screen heights — 30% taller than SP-1000's default view
+const SCREEN_HEIGHT_DESKTOP = 871;   // 670 × 1.3
+const SCREEN_HEIGHT_MOBILE = 702;    // 540 × 1.3
+
 const PACIFIC_DREAMS_PROGRAM = {
   id: 'pacific-dreams',
   name: 'PACIFIC DREAMS',
   logo: '/south-end-games-logo-social.jpg',
+  // Declared as getter so it reads the correct viewport size at access time (SSR-safe)
+  get screenHeight() {
+    if (typeof window === 'undefined') return SCREEN_HEIGHT_DESKTOP;
+    return window.innerWidth < 700 ? SCREEN_HEIGHT_MOBILE : SCREEN_HEIGHT_DESKTOP;
+  },
   bootLines: [
     { text: 'SOUTH END GAMES' },
     { text: 'PACIFIC DREAMS v1.0' },
@@ -109,7 +142,7 @@ const PACIFIC_DREAMS_PROGRAM = {
   ],
   warmUpContent: <LaserTitle />,
   content: (props) => <PacificDreamsContent {...props} />,
-  onLogoClick: () => useStore.getState().requestReboot(),
+  onLogoClick: handleLogoClick,
 };
 
 export default PACIFIC_DREAMS_PROGRAM;

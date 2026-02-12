@@ -2,6 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { daysBetween, calcPeriod, detectDrawdownMode, calcSignalData, thresholdClass } from '../lib/signal-scoring';
 import { findPrevSignalDate, findNextSignalDate } from '../lib/signal-dates-catalog';
+import PACIFIC_DREAMS_PROGRAM from './pacific-dreams/pacific-dreams-program';
 
 // CRT palette: only green, amber, red + white
 const COLORS = {
@@ -985,9 +986,10 @@ function TerminalMessage({ active, onTypingComplete }) {
   );
 }
 
-function PixelGlitchOverlay({ active, startAtGag, stocks: guideStocks, today: guideToday, onDismiss, onBlurStart, onReboot }) {
-  const [phase, setPhase] = useState(0); // 0=slide-in, 1=hold, 2=fade-to-black, 3=black, 4=terminal-typing, 5=crt-death, 6=cursor-wait (click→reboot)
+function PixelGlitchOverlay({ active, startAtGag, stocks: guideStocks, today: guideToday, onDismiss, onBlurStart, onReboot, loadGameMode, onLoadGame }) {
+  const [phase, setPhase] = useState(0); // 0=slide-in, 1=hold, 2=fade-to-black, 3=black, 4=terminal-typing, 5=crt-death|backlight-dim, 6=cursor-wait (click→reboot|load-game)
   const [gagFading, setGagFading] = useState(false); // CSS transition trigger for gag-only mode
+  const [loadGameTyped, setLoadGameTyped] = useState(false); // true after "YES" finishes typing in phase 6
   const guideScrollRef = React.useRef(null);
   const scrollDismissedRef = React.useRef(false);
   const [guideIsMobile, setGuideIsMobile] = useState(false);
@@ -1002,6 +1004,7 @@ function PixelGlitchOverlay({ active, startAtGag, stocks: guideStocks, today: gu
     if (!active) {
       setPhase(0);
       setGagFading(false);
+      setLoadGameTyped(false);
       return;
     }
 
@@ -1032,27 +1035,36 @@ function PixelGlitchOverlay({ active, startAtGag, stocks: guideStocks, today: gu
   }, [phase]);
 
   // Phase 3→4: brief black screen, then start terminal typing
+  // (loadGameMode skips typing entirely — jump straight to CRT death)
   useEffect(() => {
     if (phase !== 3) return;
-    const timer = setTimeout(() => setPhase(4), 500);
+    const timer = setTimeout(() => setPhase(loadGameMode ? 5 : 4), 500);
     return () => clearTimeout(timer);
-  }, [phase]);
+  }, [phase, loadGameMode]);
 
   const handleTypingComplete = () => {
     setPhase(5); // CRT death
   };
 
-  // Phase 5→6: CRT death animation, then cursor wait screen
+  // Phase 5→6: CRT death / backlight dimming, then cursor wait screen
+  // Backlight dimming (loadGameMode): last panel finishes at ~1500ms, hold 600ms
+  // CRT death (guide mode): 3300ms for collapse + fade
   useEffect(() => {
     if (phase !== 5) return;
-    const timer = setTimeout(() => setPhase(6), 3300);
+    const timer = setTimeout(() => setPhase(6), loadGameMode ? 2100 : 3300);
     return () => clearTimeout(timer);
-  }, [phase]);
+  }, [phase, loadGameMode]);
 
   const handleCursorClick = () => {
     if (phase !== 6) return;
     // Dismiss guide and trigger the real startup overlay
     if (onReboot) onReboot();
+    if (onDismiss) onDismiss();
+  };
+
+  const handleLoadGameClick = () => {
+    if (phase !== 6) return;
+    if (onLoadGame) onLoadGame();
     if (onDismiss) onDismiss();
   };
 
@@ -1064,6 +1076,18 @@ function PixelGlitchOverlay({ active, startAtGag, stocks: guideStocks, today: gu
     return () => window.removeEventListener('keydown', handler);
   }, [active, onDismiss]);
 
+  // Enter to confirm on phase 6 (LOAD GAME / cursor screen)
+  useEffect(() => {
+    if (!active || phase !== 6) return;
+    const handler = (e) => {
+      if (e.key === 'Enter') {
+        if (loadGameMode) handleLoadGameClick();
+        else handleCursorClick();
+      }
+    };
+    window.addEventListener('keydown', handler);
+    return () => window.removeEventListener('keydown', handler);
+  }, [active, phase, loadGameMode]);
 
   // NOTE: Do NOT put an early return here — the useMemo below must always run
   // to maintain consistent React hook order. The guarded return is at line ~965.
@@ -1860,36 +1884,76 @@ function PixelGlitchOverlay({ active, startAtGag, stocks: guideStocks, today: gu
         </div>
       )}
 
-      {/* CRT death - collapses to horizontal line after POWERING DOWN */}
+      {/* CRT death / backlight dimming — phase 5 transition to black */}
       {phase === 5 && (
-        <>
+        loadGameMode ? (
+          /* Staggered backlight panel dimming — zones dim in sequence with slight delays */
           <div style={{
             position: 'absolute',
             top: 0,
             left: 0,
             right: 0,
             bottom: 0,
-            backgroundColor: '#000',
-            animation: 'sp1000crtDeath 0.5s ease-in forwards',
-          }} />
-          <div style={{
-            position: 'absolute',
-            top: '50%',
-            left: '50%',
-            transform: 'translate(-50%, -50%)',
-            width: '150%',
-            height: 4,
-            backgroundColor: '#fff',
-            boxShadow: '0 0 40px 20px rgba(255,255,255,1), 0 0 80px 40px rgba(255,255,255,0.8)',
-            animation: 'sp1000guideCrtLine 0.6s ease-out forwards',
-          }} />
-        </>
+            display: 'grid',
+            gridTemplateColumns: '1fr 1fr 1fr',
+            gridTemplateRows: '1fr 1fr 1fr',
+          }}>
+            {[
+              /* Dimming order: center → edges, top-down bias for CRT feel */
+              /* [row, col, delayMs] */
+              [0, 1, 0],    // top-center first
+              [1, 1, 150],  // center
+              [0, 0, 300],  // top-left
+              [0, 2, 350],  // top-right
+              [1, 0, 500],  // mid-left
+              [1, 2, 550],  // mid-right
+              [2, 1, 700],  // bottom-center
+              [2, 0, 850],  // bottom-left
+              [2, 2, 900],  // bottom-right
+            ].map(([row, col, delay], i) => (
+              <div
+                key={i}
+                style={{
+                  gridRow: row + 1,
+                  gridColumn: col + 1,
+                  backgroundColor: '#111',
+                  opacity: 0,
+                  animation: `sp1000backlightDim 0.6s ease-in ${delay}ms forwards`,
+                }}
+              />
+            ))}
+          </div>
+        ) : (
+          /* Classic CRT death — collapses to horizontal line */
+          <>
+            <div style={{
+              position: 'absolute',
+              top: 0,
+              left: 0,
+              right: 0,
+              bottom: 0,
+              backgroundColor: '#000',
+              animation: 'sp1000crtDeath 0.5s ease-in forwards',
+            }} />
+            <div style={{
+              position: 'absolute',
+              top: '50%',
+              left: '50%',
+              transform: 'translate(-50%, -50%)',
+              width: '150%',
+              height: 4,
+              backgroundColor: '#fff',
+              boxShadow: '0 0 40px 20px rgba(255,255,255,1), 0 0 80px 40px rgba(255,255,255,0.8)',
+              animation: 'sp1000guideCrtLine 0.6s ease-out forwards',
+            }} />
+          </>
+        )
       )}
 
-      {/* Black screen with blinking cursor — click to trigger startup */}
+      {/* Black screen with blinking cursor — click to reboot or load game */}
       {phase === 6 && (
         <div
-          onClick={handleCursorClick}
+          onClick={loadGameMode ? handleLoadGameClick : handleCursorClick}
           style={{
             position: 'absolute',
             top: 0,
@@ -1905,7 +1969,21 @@ function PixelGlitchOverlay({ active, startAtGag, stocks: guideStocks, today: gu
             fontFamily: MONO, fontSize: 11, color: COLORS.green,
             textShadow: '0 0 8px rgba(51,255,102,0.9), 0 0 16px rgba(51,255,102,0.6)',
           }}>
-            <span style={{ animation: 'sp1000cursorBlink 0.8s step-end infinite' }}>█</span>
+            {loadGameMode ? (
+              <>
+                <div style={{ letterSpacing: 2, marginBottom: 12, lineHeight: 1.8 }}>
+                  <TypewriterText text="LOAD GAME?" charDelay={80} />
+                </div>
+                <div style={{ letterSpacing: 2 }}>
+                  <TypewriterText text="YES" charDelay={120} startDelay={1100} onComplete={() => setLoadGameTyped(true)} />
+                  {loadGameTyped && (
+                    <span style={{ animation: 'sp1000cursorBlink 0.8s step-end infinite' }}>█</span>
+                  )}
+                </div>
+              </>
+            ) : (
+              <span style={{ animation: 'sp1000cursorBlink 0.8s step-end infinite' }}>█</span>
+            )}
           </div>
         </div>
       )}
@@ -2367,6 +2445,15 @@ function StartupOverlay({ onComplete, onFadeIn, logo: logoProp, bootLines: bootL
     else if (phase === 3 || phase === 4) onComplete();
   };
 
+  // Enter/Return to advance boot (same as click)
+  const handleClickRef = React.useRef(handleClick);
+  handleClickRef.current = handleClick;
+  useEffect(() => {
+    const handler = (e) => { if (e.key === 'Enter') handleClickRef.current(); };
+    window.addEventListener('keydown', handler);
+    return () => window.removeEventListener('keydown', handler);
+  }, []);
+
   const bootLines = bootLinesProp || SP1000_BOOT_LINES;
 
   return (
@@ -2649,10 +2736,10 @@ function WhiteFlashOverlay({ active, onDismiss, logo: logoProp }) {
     }
   }, [phase, onDismiss]);
 
-  // ESC to skip logo overlay
+  // ESC or Enter to skip logo overlay
   useEffect(() => {
     if (!active) return;
-    const handler = (e) => { if (e.key === 'Escape' && onDismiss) onDismiss(); };
+    const handler = (e) => { if ((e.key === 'Escape' || e.key === 'Enter') && onDismiss) onDismiss(); };
     window.addEventListener('keydown', handler);
     return () => window.removeEventListener('keydown', handler);
   }, [active, onDismiss]);
@@ -3791,8 +3878,22 @@ function TimeMachineBlueprintOverlay({ stocks, historicalDate, onReturn, onEnter
 }
 
 export default function Terminal({ stocks = [], today, onRefresh, loading, limitReached, onStockChange, timeMachineDate, timeMachineStocks, timeMachineLoading, onTimeMachineActivate, onReturnToPresent, benchmarkReturn, onTimeMachineNavigate, signalDatesIndex, program }) {
-  const prog = program || SP1000_PROGRAM;
+  const [activeProgram, setActiveProgram] = useState(program || SP1000_PROGRAM);
+  const prog = activeProgram;
   const isSP1000 = prog.id === 'sp1000';
+
+  // Sync if external program prop changes
+  useEffect(() => { if (program) setActiveProgram(program); }, [program]);
+
+  // Smooth content height transition when swapping programs (e.g. LOAD GAME flow).
+  // The height grows during the boot sequence (green laser sweep + boot text) so the
+  // terminal bezel visually expands while the boot overlay is on-screen.
+  const contentRef = React.useRef(null);
+  const [contentHeight, setContentHeight] = useState(
+    (program || SP1000_PROGRAM).screenHeight || null
+  );
+  const [heightTransitioning, setHeightTransitioning] = useState(false);
+
   const [glitching, setGlitching] = useState(false);
   const [showLogo, setShowLogo] = useState(false);
   const [lastSynced, setLastSynced] = useState(null);
@@ -4292,6 +4393,11 @@ export default function Terminal({ stocks = [], today, onRefresh, loading, limit
           90% { clip-path: inset(49.5% 0 49.5% 0); filter: brightness(4); }
           100% { clip-path: inset(50% 0 50% 0); filter: brightness(5); }
         }
+        @keyframes sp1000backlightDim {
+          0% { opacity: 0; background-color: #111; }
+          30% { opacity: 0.6; background-color: #0a0a0a; }
+          100% { opacity: 1; background-color: #080808; }
+        }
         @keyframes sp1000crtWarmUp {
           0% { transform: scaleY(0); filter: brightness(0); opacity: 0; }
           5% { transform: scaleY(0.01); filter: brightness(0.5); opacity: 0.3; }
@@ -4505,9 +4611,16 @@ export default function Terminal({ stocks = [], today, onRefresh, loading, limit
               </div>
             )}
             <div
+              ref={contentRef}
               style={{
                 width: '100%',
                 position: 'relative',
+                // Smooth height transition when swapping programs (LOAD GAME flow)
+                ...(contentHeight != null ? {
+                  height: contentHeight,
+                  transition: heightTransitioning ? 'height 1.2s ease-in-out' : 'none',
+                  overflow: 'hidden',
+                } : {}),
               }}
             >
               <div style={{ opacity: bootFade ? 1 : 0, transition: 'opacity 1.4s ease-in' }}>
@@ -4544,7 +4657,25 @@ export default function Terminal({ stocks = [], today, onRefresh, loading, limit
               )}
               {bootChecked && !booted && <StartupOverlay onComplete={handleBootComplete} onFadeIn={handleBootFadeIn} logo={prog.logo} bootLines={prog.bootLines} warmUpContent={prog.warmUpContent} />}
               {isSP1000 && <>
-              <PixelGlitchOverlay active={glitching} startAtGag={contactGag} stocks={stocks} today={today} onDismiss={() => { setGlitching(false); setGuideBlurred(false); setContactGag(false); setRestartVisible(false); }} onBlurStart={() => setGuideBlurred(true)} onReboot={() => setBooted(false)} />
+              <PixelGlitchOverlay active={glitching} startAtGag={contactGag} stocks={stocks} today={today} onDismiss={() => { setGlitching(false); setGuideBlurred(false); setContactGag(false); setRestartVisible(false); }} onBlurStart={() => setGuideBlurred(true)} onReboot={() => setBooted(false)} loadGameMode={contactGag} onLoadGame={() => {
+                // Snapshot current height → lock it → then grow during boot
+                if (contentRef.current) {
+                  const h = contentRef.current.offsetHeight;
+                  setContentHeight(h);
+                }
+                setActiveProgram(PACIFIC_DREAMS_PROGRAM);
+                setBooted(false);
+                setBootFade(false);
+                // After the boot overlay renders (black screen), start the height grow
+                // Timed to coincide with early boot animation (~600ms delay, 1.2s ease)
+                requestAnimationFrame(() => {
+                  requestAnimationFrame(() => {
+                    setHeightTransitioning(true);
+                    setContentHeight(PACIFIC_DREAMS_PROGRAM.screenHeight);
+                    setTimeout(() => setHeightTransitioning(false), 1400);
+                  });
+                });
+              }} />
               {timeMachineInput && (
                 <TimeMachineDateInput
                   onSubmit={handleDateConfirm}

@@ -1,6 +1,6 @@
 'use client';
 // Pacific Dreams / Backlot Mogul — Game Content (rendered inside the Terminal shell)
-// Phase 5: PreProduction, Production, Premiere, Lot are live. Endgame still placeholder.
+// All 7 phases live: Title, PreProd, Production, Marketing, Premiere, Lot, Endgame.
 
 import { useState, useEffect } from 'react';
 import useStore from '../../lib/pacific-dreams/store';
@@ -11,11 +11,12 @@ import Production from './Production';
 import Marketing from './Marketing';
 import Premiere from './Premiere';
 import CombinedLot from './CombinedLot';
+import Endgame from './Endgame';
 
-// Fixed screen height — matches FrontFace's natural rendered height so the
-// housing looks identical regardless of which "program" is loaded.
-const SCREEN_HEIGHT_DESKTOP = 670;
-const SCREEN_HEIGHT_MOBILE = 540;
+// Screen height — 30% taller than SP-1000's FrontFace to give the game
+// more breathing room for phase UIs (PreProd casting, Lot grid, Endgame scroll).
+const SCREEN_HEIGHT_DESKTOP = 871;   // 670 × 1.3
+const SCREEN_HEIGHT_MOBILE = 702;    // 540 × 1.3
 
 function StudioHeader() {
   const { reputation, filmNumber, history, funds, getRepStars } = useStore();
@@ -278,6 +279,7 @@ export default function PacificDreamsContent() {
   const novaIntroduced = useStore(s => s.novaIntroduced);
   const introduceNova = useStore(s => s.introduceNova);
   const simulateNova = useStore(s => s.simulateNova);
+  const setPhase = useStore(s => s.setPhase);
   const [isMobile, setIsMobile] = useState(false);
 
   useEffect(() => {
@@ -297,6 +299,13 @@ export default function PacificDreamsContent() {
       if (novaIntroduced) simulateNova();
     }
   }, [phase]);
+
+  // Safety net: auto-redirect to endgame if lot is already full on re-entry
+  useEffect(() => {
+    if (phase === 'lot' && useStore.getState().endgameTriggered) {
+      setPhase('endgame');
+    }
+  }, [phase, setPhase]);
 
   const screenHeight = isMobile ? SCREEN_HEIGHT_MOBILE : SCREEN_HEIGHT_DESKTOP;
 
@@ -354,7 +363,7 @@ export default function PacificDreamsContent() {
         }
       `}</style>
 
-      {phase !== 'title' && phase !== 'preprod' && phase !== 'lot' && <StudioHeader />}
+      {phase !== 'title' && phase !== 'preprod' && phase !== 'lot' && phase !== 'endgame' && <StudioHeader />}
 
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflowY: 'auto', WebkitOverflowScrolling: 'touch', minHeight: 0 }}>
         {phase === 'title' && <TitleScreen />}
@@ -363,7 +372,7 @@ export default function PacificDreamsContent() {
         {phase === 'marketing' && <Marketing />}
         {phase === 'premiere' && <Premiere />}
         {phase === 'lot' && <CombinedLot />}
-        {phase === 'endgame' && <MigrationPlaceholder phaseName="Endgame" />}
+        {phase === 'endgame' && <Endgame />}
       </div>
 
       {rebootRequested && <RebootOverlay />}
